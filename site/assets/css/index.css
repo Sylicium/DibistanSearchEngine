@@ -1,0 +1,82 @@
+
+
+body {
+    background-color: #36393F;
+    font-family: calibri;
+    overflow: hidden;
+}
+
+
+
+#Page_makeSearch div.mainLogo {
+    width: 100%;
+    padding: 20px;
+}
+#Page_makeSearch div.mainLogo div.logoBox {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    color: white;
+    font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+    font-size: 3vh;
+    justify-self: center;
+    width: fit-content;
+    margin: 0px auto;
+}
+
+#Page_makeSearch div.mainLogo img.logo {
+    width: 5.5vh;
+    border-radius: 10px;
+    margin: 3px;
+}
+
+#mainSearchBar_form {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    flex-direction: column;
+}
+
+#mainSearchBar {
+    border: 1px solid whitesmoke;
+    min-width: 300px;
+    max-width: 500px;
+    border-radius: 50px;
+    vertical-align: middle;
+    background-color: rgb(78, 78, 255);
+    box-shadow: 0px 5px 5px 0px rgb(48, 48, 48);
+    display: flex;
+    transition: 0.2s all;
+}
+#mainSearchBar:hover {
+    transition: 0.1s all;
+    border: 1px solid transparent;
+    background-color: rgb(57, 57, 252);
+}
+#mainSearchBar_input {
+    outline: none;
+    background: transparent;
+    border: 1px solid transparent;
+    vertical-align: middle;
+    color: white;
+    font-family: calibri;
+    font-size: 1.8vh;
+    padding: 10px 20px;
+    flex: 1 0;
+}
+#mainSearchBar_sendSearch {
+    flex: 0 0;
+    outline: none;
+    background: transparent;
+    border: 1px solid transparent;
+    vertical-align: middle;
+    margin: 5px;
+    padding: 5px;
+    border-radius: 100px;
+    cursor: pointer;
+}
+#mainSearchBar_sendSearch:hover {
+    background-color: rgb(47, 47, 252);
+    filter: brightness(0.9);
+}

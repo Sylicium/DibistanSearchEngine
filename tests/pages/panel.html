@@ -1,0 +1,792 @@
+<html>
+
+<head>
+    <title>Dibim | Admin panel</title>
+</head>
+
+
+<style>
+
+body {
+    font-family: Calibri;
+    background: black;
+}
+
+body h1,h2,h3,h4,h5,h6,p {
+    color: white;
+}
+
+div.infos {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    background-color: whitesmoke;
+}
+
+div.infos div.info {
+    display: flex;
+    flex-direction: row;
+    color: black;
+    padding: 3px;
+    align-items: center;
+    cursor: pointer;
+    width: 100%;
+}
+div.infos div.separator {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+div.infos div.separator div.sep {
+    width: 50%;
+    height: 1px;
+    background-color: #ff00ea;
+    border-radius: 100px;
+    margin: 3px;
+}
+div.infos div.info div {
+    width: 100%;
+    margin-right: 10px;
+    margin-left: 10px;
+}
+div.infos div.info div.info-name {
+    text-align: right;
+}
+div.infos div.info:hover {
+    display: flex;
+    flex-direction: row;
+    background-color: #36393F;
+    color: white;
+}
+
+
+
+.allchart_container{
+  margin: 20px auto;
+  background-color:#fff;
+  display:grid;
+  grid-template-columns: 50% 50%;
+  grid-row: auto auto;
+  /*grid-column-gap: 10px;
+  grid-row-gap: 10px;*/
+
+}
+.allchart_container .chart{
+    margin: 5px;
+    height: auto;
+}
+
+
+</style>
+
+
+<body>
+
+    <div class="infos">
+
+        <div class="separator"><label>Global infos</label><div class="sep"></div></div>
+
+        <div class="info">
+            <div class="info-name">Total links:</div>
+            <div class="info-value"><span class="total_links">0</span></div>
+        </div>
+        <div class="info">
+            <div class="info-name">Total of links to fetch</div>
+            <div class="info-value"><span class="total_fetching_links">0</span></div>
+        </div>
+
+        <div class="separator"><label>Currently parsing</label><div class="sep"></div></div>
+
+        <div class="info">
+            <div class="info-name">Total of links fetched</div>
+            <div class="info-value"><span class="total_fetched_links">0</span>/<span class="total_fetching_links">0</span> (<span id="percentage_fetched_links">0.00 %</span>)</div>
+        </div>
+        <div class="info">
+            <div class="info-name">Chunk</div>
+            <div class="info-value"><span class="chunks_processing">0</span>/<span class="chunks_total">0</span></div>
+        </div>
+        <div class="info">
+            <div class="info-name">Links in chunk</div>
+            <div class="info-value"><span class="linksInChunks_processed">0</span>/<span class="linksInChunks_total">0</span></div>
+        </div>
+
+        <div class="separator"><label>None</label><div class="sep"></div></div>
+
+        <div class="info">
+            <div class="info-name">Amount of links fetched in pages (duplicates clear each chunk)</div>
+            <div class="info-value"><span class="total_new_links_fetched">0</span></div>
+        </div>
+    </div>
+
+    <input id="chunks_size_input" value="2000" placeholder="The size of chunks to fetch by">100</input>
+    <button onclick="oneMoreLoop()">Do one more loop</button>
+    <button onclick="writeDown()">Write down a file</button>
+
+    <h2>remaining estimated time: <spawn id="remaining_time">None</spawn></h2>
+
+    <div class="allchart_container">
+
+        <!--
+        <div class="chart">coucou</div>
+        <div class="chart">coucou</div>
+        <div class="chart">coucou</div>
+        <div class="chart">coucou</div>
+        -->
+
+        <div class="chart" id="chartContainer_linksPerSecond"></div>
+        <div class="chart" id="chartContainer_totalLinksRemaining"></div>
+    </div>
+
+    <div class="allchart_container">
+        <div class="chart" id="chartContainer_totalLinksFetched"></div>
+        <div class="chart" id="chartContainer"></div>
+    </div>
+
+
+</body>
+
+<script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+<script src="https://cdn.socket.io/4.4.1/socket.io.min.js" integrity="sha384-fKnu0iswBIqkjxrhQCTZ7qlLHOFEgNkRmK2vaO/LbTZSXdJfAu6ewRBdwHPhBo/H" crossorigin="anonymous"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+
+let socket = io()
+
+
+var audio = new Audio('/assets/audio/sonnerie_ecole.mp3');
+
+function ring(){
+    //audio.play();
+}
+function stopRing() { audio.pause() }
+
+/*
+total_links
+total_fetching_links
+total_fetched_links // add_total_fetched_links -> +1
+chunks_processing
+chunks_total
+linksInChunks_processed
+linksInChunks_total
+*/
+//server.emitChanges("total_links", 1)
+//server.emitChanges("total_links", 1)
+
+let charts = {
+    "linksPerSecond": {
+        chart: new CanvasJS.Chart("chartContainer_linksPerSecond", { title :{
+                text: "Links fetched / seconds"
+            }, data: [{ type: "line", dataPoints: [] }]
+        }),
+        xVal: 0,
+        yVal: 0,
+        updateInterval: 1000,
+        dataLength: 60,
+        dps: [],
+    },
+    "totalLinksRemaining": {
+        chart: new CanvasJS.Chart("chartContainer_totalLinksRemaining", { title :{
+                text: "Remaining links to fetch"
+            }, data: [{ type: "line", dataPoints: [] }]
+        }),
+        xVal: 0,
+        yVal: 0,
+        updateInterval: 1000,
+        dataLength: 180,
+        dps: [],
+    },
+    "totalLinksFetched": {
+        chart: new CanvasJS.Chart("chartContainer_totalLinksFetched", { title :{
+                text: "Total links fetched"
+            }, data: [{ type: "line", dataPoints: [] }]
+        }),
+        xVal: 0,
+        yVal: 0,
+        updateInterval: 1000,
+        dataLength: 180,
+        dps: [],
+    },
+}
+
+var updateChart = function (chartName, value) {
+
+    let chart_datas = charts[chartName]
+    if(!chart_datas) return;
+    let chart = chart_datas.chart
+
+    count = 1;
+
+    for (var j = 0; j < count; j++) {
+        chart_datas.yVal = value
+        chart_datas.dps.push({
+            x: chart_datas.xVal,
+            y: chart_datas.yVal
+        });
+        chart_datas.xVal++;
+    }
+
+    if (chart_datas.dps.length > chart_datas.dataLength) {
+        chart_datas.dps.shift();
+    }
+
+    chart.render();
+};
+
+
+setTimeout(() => {
+
+    let temp1 = document.getElementById("chartContainer_linksPerSecond")
+    let temp2 = temp1.getElementsByClassName("canvasjs-chart-container")[0]
+    let temp3 = temp2.getElementsByClassName("canvasjs-chart-canvas")[0]
+
+    let l = [temp3]
+    for(let i in l) {
+        if(!l[i].className) continue;
+        l[i].style.position = "inherit"
+    }
+
+    temp1 = document.getElementById("chartContainer_totalLinksRemaining")
+    temp2 = temp1.getElementsByClassName("canvasjs-chart-container")[0]
+    temp3 = temp2.getElementsByClassName("canvasjs-chart-canvas")[0]
+
+    l = [temp3]
+    for(let i in l) {
+        if(!l[i].className) continue;
+        l[i].style.position = "inherit"
+    }
+    temp1 = document.getElementById("chartContainer_totalLinksFetched")
+    temp2 = temp1.getElementsByClassName("canvasjs-chart-container")[0]
+    temp3 = temp2.getElementsByClassName("canvasjs-chart-canvas")[0]
+
+    l = [temp3]
+    for(let i in l) {
+        if(!l[i].className) continue;
+        l[i].style.position = "inherit"
+    }
+
+
+
+}, 3000)
+
+
+
+
+
+
+let listOfEventsAndId = [
+    "total_links",
+    "total_fetching_links",
+    "total_fetched_links",
+    "chunks_processing",
+    "chunks_total",
+    "linksInChunks_processed",
+    "linksInChunks_total",
+    "total_new_links_fetched",
+]
+
+socket.on("log", (...args) => {
+    console.log(...args)
+})
+socket.on("debug", (...args) => {
+    console.log(`[DEBUG LOG] `,...args)
+})
+
+socket.on("connect", () => {
+    console.log(`[sock:connected] Connected to server.`)
+})
+socket.on("disconnect", () => {
+    console.warn(`[sock:disconnect] Disconnected from server.`)
+})
+
+socket.on("add_total_fetched_links", (amount) => {
+    let all_elem = document.getElementsByClassName("total_fetched_links")
+    for(let i in all_elem) {
+        if(!all_elem[i].className) continue;
+        let new_value = parseInt(all_elem[i].textContent) + parseInt(amount)
+        total_fetched_links = parseInt(new_value)
+        //console.log("new_value:",new_value,parseInt(new_value),total_fetched_links)
+        all_elem[i].textContent = new_value
+    }
+    let percentage_elem = document.getElementById("percentage_fetched_links")
+    percentage_elem.textContent = `${((total_fetched_links/total_fetching_links)*100).toFixed(2)} %`
+})
+socket.on("add_total_new_links_fetched", (amount) => {
+    let all_elem = document.getElementsByClassName("total_new_links_fetched")
+    for(let i in all_elem) {
+        if(!all_elem[i].className) continue;
+        let new_value = parseInt(all_elem[i].textContent) + parseInt(amount)
+        all_elem[i].textContent = new_value
+    }
+})
+
+function oneMoreLoop() {
+    socket.emit("oneMoreLoop", parseInt(document.getElementById("chunks_size_input").value))
+}
+function writeDown() {
+    socket.emit("writeDown", undefined)
+}
+
+
+let loopTimestamps = {
+    start: 0,
+    end: 1
+}
+socket.on("startLoop", (timestamp) => { loopTimestamps.start = timestamp })
+socket.on("endLoop", (timestamp) => {
+    loopTimestamps.end = timestamp
+    ring()
+})
+
+
+let total_fetching_links = 0
+let total_fetched_links = 0
+let total_fetched_links_lastSecond = 0
+
+
+for(let i in listOfEventsAndId) {
+
+    socket.on(`${listOfEventsAndId[i]}`, (value) => {
+        //console.log(`[sock:${listOfEventsAndId[i]}] > ${value}`)
+        if(listOfEventsAndId[i] == "total_fetching_links") total_fetching_links = parseInt(value)
+        if(listOfEventsAndId[i] == "total_fetched_links") total_fetched_links = parseInt(value)
+        let all_elem = document.getElementsByClassName(listOfEventsAndId[i])
+        for(let i in all_elem) {
+            if(all_elem[i].className) all_elem[i].textContent = `${value}`
+        }
+    })
+}
+
+
+function formatTime(millisecondes, format) {
+    /*
+    Renvoie un dictionnaire avec le formatage de la durée en ms, en jour, heures, etc...
+    YYYY: year
+    MM: month
+    DDDDD: jour de l'année
+    DD: jours du mois
+    hh: heure
+    mm: minute
+    ss: seconde
+    ms: millisecondes
+    */
+    let v = {
+        y: 31536000000,
+        mo: 2628000000,
+        d: 86400000,
+        h: 3600000,
+        m: 60000,
+        s: 1000
+    }
+    let la_date = {
+        years: Math.floor(millisecondes / v.y),
+        months: Math.floor((millisecondes % v.y) / v.mo), // value de l'année divisée en douze poue faire à peu pres
+        all_days: Math.floor(millisecondes / v.d), // jours de l'année
+        days: Math.floor(((millisecondes % v.y) % v.mo) / v.d), // jours du mois
+        hours: Math.floor((((millisecondes % v.y) % v.mo) % v.d) / v.h),
+        minutes: Math.floor(((((millisecondes % v.y) % v.mo) % v.d) % v.h) / v.m),
+        seconds: Math.floor((((((millisecondes % v.y) % v.mo) % v.d) % v.h) % v.m) / v.s),
+        milliseconds: (((((millisecondes % v.y) % v.mo) % v.d) % v.h) % v.m) % v.s
+    }
+    //console.log(la_date)
+
+    function formatThis(thing, length = 2) {
+        return `0000${thing}`.substr(-length)
+    }
+
+    let return_string = format.replace("YYYY", la_date.years).replace("MM", formatThis(la_date.months)).replace("DDDDD", la_date.all_days).replace("DD", formatThis(la_date.days)).replace("hh", formatThis(la_date.hours)).replace("mm", formatThis(la_date.minutes)).replace("ss", formatThis(la_date.seconds)).replace("ms", formatThis(la_date.milliseconds, 3))
+
+    return return_string
+}
+
+
+let nbr_0_per_second = 0
+
+let remaining_time_Interval = setInterval(() => {
+
+    if(nbr_0_per_second > 30) {
+        console.log([
+        ``,
+        ``,
+        `CODE IS BLOCKED ON VISUAL STUDIO`,
+        `CODE IS BLOCKED ON VISUAL STUDIO`,
+        `CODE IS BLOCKED ON VISUAL STUDIO`,
+        ``,
+        ``,
+        ``,
+        ].join("\n"))
+        ring()
+    }
+
+    elem = document.getElementById("remaining_time")
+    let remaining_time = calcAveradgeTimeRemaining()
+    elem.textContent = formatTime(remaining_time, `DDDDD jours, hh:mm:ss`)
+
+    if(total_fetched_links-total_fetched_links_lastSecond == 0) {
+        nbr_0_per_second++
+    } else { nbr_0_per_second = 0 }
+
+    //updateChart("linksPerSecond", remaining_time/(60*1000))
+    updateChart("totalLinksFetched", total_fetched_links)
+
+    updateChart("linksPerSecond", total_fetched_links-total_fetched_links_lastSecond)
+    total_fetched_links_lastSecond = total_fetched_links
+
+    updateChart("totalLinksRemaining", total_fetching_links-total_fetched_links)
+
+}, 1*1000)
+
+function calcAveradgeTimeRemaining() {
+    let count = total_fetched_links
+    let total = total_fetching_links
+
+    if(total == 0) return "No action."
+
+    for(let i=0; i<353535; i++) {
+
+    }
+
+    let ellapsedTime = Date.now() - loopTimestamps.start
+
+    let temp1 = 1/(count/total)
+    let remaining = (temp1-1)*ellapsedTime
+
+    // console.log("loopTimestamps",loopTimestamps)
+    // console.log("count",count)
+    // console.log("total",total)
+    // console.log("temp1",temp1)
+    // console.log("remaining:",remaining)
+
+    return remaining
+}
+
+
+</script>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+
+    let Debug = false
+
+    console.log("\n===== =====\n\n")
+
+
+    let globalInfos = {
+        last_refresh_timestamp: Date.now(),
+        averageList_apiEvents: [],
+        averageList_fiveMinutes: [],
+        averageList_instant: [],
+        averageList_lastMinute: Array(60).fill(0)
+    }
+
+
+    
+var dps = []; // dataPoints
+var chart = new CanvasJS.Chart("chartContainer", {
+	title :{
+		text: "Dynamic Data for last 5min"
+	},
+	data: [{
+		type: "line",
+		dataPoints: dps
+	}]
+});
+
+var xVal = 0;
+var yVal = 0; 
+var updateInterval = 1000;
+var dataLength = 320; // number of dataPoints visible at any point
+
+var updateChart = function (value) {
+
+	count = 1;
+
+	for (var j = 0; j < count; j++) {
+		yVal = value
+		dps.push({
+			x: xVal,
+			y: yVal
+		});
+		xVal++;
+	}
+
+	if (dps.length > dataLength) {
+		dps.shift();
+	}
+
+	chart.render();
+};
+
+updateChart(dataLength);
+setInterval(function(){updateChart(globalInfos.averageList_lastMinute[globalInfos.averageList_lastMinute.length-1])}, updateInterval);
+
+    
+
+    
+    let socketURL = "https://place.codati.ovh";
+    const socket = io(socketURL);
+    
+    socket.on("connect", () => {
+        console.log(`[sock] Connected.`)
+        socket.emit("changePixel",{min:{x:0,y:0},max:{x:9000,y:9000}});
+        
+        
+    })
+    socket.on("changePixel",async (pixels)=>{
+        if(Debug) console.log(`[sock] changePixel > ${pixels.length} edited`)
+        if(pixels.length >= 100000) return;
+        NumberToReach = NumberToReach + pixels.length
+        globalInfos.averageList_apiEvents.push(pixels.length)
+        if(globalInfos.averageList_apiEvents.length > 100) {
+            globalInfos.averageList_apiEvents.shift()
+        }
+        
+        globalInfos.averageList_fiveMinutes.push(
+            {time:Date.now(), value: pixels.length}
+        )
+        globalInfos.averageList_instant.push(
+            {time:Date.now(), value: pixels.length}
+        )
+    })
+    
+
+    
+    let currentNumber = 0
+    let NumberToReach = 000
+
+    let list_of_adds = [
+        
+        {v:10000, add:8123},
+        {v:1600, add:1132},
+        {v:500, add:342},
+        {v:151, add:72},
+        {v:111, add:51},
+        {v:77, add:35},
+        {v:55, add:14},
+        {v:33, add:8},
+        {v:22, add:5},
+        {v:11, add:3},
+        {v:5, add:2},
+        {v:1, add:1},
+
+        
+    ]
+
+    /*
+
+        {v:151, add:71},
+        {v:111, add:31},
+        {v:77, add:18},
+        {v:55, add:16},
+        {v:33, add:12},
+        {v:22, add:8},
+        {v:11, add:4},
+        {v:5, add:2},
+        {v:1, add:1}
+    */
+    function _sum(list) { return list.reduce((a, b) => a + b, 0); }
+    function getAverage(list) {
+        let sum = list.reduce((a, b) => a + b, 0);
+        let avg = (sum / list.length) || 0;
+        return avg
+    }
+
+    function setRaidLevel(level){
+        let elem = document.getElementById("stat_average_pixels_everyApiEvent_isRaid")
+        if(level <= 1) {
+            elem.className = elem.className.replace("__color_orange__", "__color_white__")
+            elem.className = elem.className.replace("__color_red__", "__color_white__")
+            elem.className = elem.className.replace("__color_black__", "__color_white__")
+        } else if(level <= 3) {
+            elem.className = elem.className.replace("__color_white__", "__color_orange__")
+            elem.className = elem.className.replace("__color_red__", "__color_orange__")
+            elem.className = elem.className.replace("__color_black__", "__color_orange__")
+        } else if(level <= 6) {
+            elem.className = elem.className.replace("__color_white__", "__color_red__")
+            elem.className = elem.className.replace("__color_orange__", "__color_red__")
+            elem.className = elem.className.replace("__color_black__", "__color_red__")
+        } else if(level > 6) {
+            elem.className = elem.className.replace("__color_white__", "__color_black__")
+            elem.className = elem.className.replace("__color_orange__", "__color_black__")
+            elem.className = elem.className.replace("__color_red__", "__color_black__")
+        }
+        
+    }
+
+
+    function _globalRefresh() {
+
+        if(socket.connected) {
+            document.getElementById("isApiConnected").textContent = ""
+        } else {
+            let _msg = "API Error: Unable to refresh statistics"
+            let _apiConnected_elem = document.getElementById("isApiConnected")
+            if(_apiConnected_elem.textContent == _msg) _apiConnected_elem.textContent = `${_msg}.`
+            else if(_apiConnected_elem.textContent == `${_msg}.`) _apiConnected_elem.textContent = `${_msg}..`
+            else if(_apiConnected_elem.textContent == `${_msg}..`) _apiConnected_elem.textContent = `${_msg}...`
+            else if(_apiConnected_elem.textContent == `${_msg}...`) _apiConnected_elem.textContent = _msg
+            else _apiConnected_elem.textContent = _msg
+        }
+
+        
+        document.getElementById("time_elapsed_since_refresh").textContent = formatTime(Date.now()-globalInfos.last_refresh_timestamp, "DDdays, hhh mmm sss")
+
+        let value__stat_average_pixels_everyApiEvent = getAverage(globalInfos.averageList_apiEvents).toFixed(2);
+        document.getElementById("stat_average_pixels_everyApiEvent").textContent = value__stat_average_pixels_everyApiEvent
+
+        if(value__stat_average_pixels_everyApiEvent < 75){
+            document.getElementById("stat_average_pixels_everyApiEvent_isRaid").textContent = `[Raid: No](A)`
+            setRaidLevel(0)
+        } else if(value__stat_average_pixels_everyApiEvent <= 85){
+            document.getElementById("stat_average_pixels_everyApiEvent_isRaid").textContent = `[Raid: Maybe](B)`
+            setRaidLevel(1)
+        } else if(value__stat_average_pixels_everyApiEvent <= 95){
+            document.getElementById("stat_average_pixels_everyApiEvent_isRaid").textContent = `[Raid: Certainly](C)`
+            setRaidLevel(2)
+        } else if(value__stat_average_pixels_everyApiEvent <= 105){
+            document.getElementById("stat_average_pixels_everyApiEvent_isRaid").textContent = `[Raid: Yes](D)`
+            setRaidLevel(3)
+        } else if(value__stat_average_pixels_everyApiEvent <= 115){
+            document.getElementById("stat_average_pixels_everyApiEvent_isRaid").textContent = `[Raid: Big raid](E)`
+            setRaidLevel(4)
+        } else if(value__stat_average_pixels_everyApiEvent <= 125){
+            document.getElementById("stat_average_pixels_everyApiEvent_isRaid").textContent = `[Raid: Huge Raid](F)`
+            setRaidLevel(5)
+        } else if(value__stat_average_pixels_everyApiEvent <= 135){
+            document.getElementById("stat_average_pixels_everyApiEvent_isRaid").textContent = `[Raid: Fak RaidRaidRaid](G)`
+            setRaidLevel(6)
+        } else if(value__stat_average_pixels_everyApiEvent <= 145){
+            document.getElementById("stat_average_pixels_everyApiEvent_isRaid").textContent = `[Raid: DUDE SO RAID](H)`
+            setRaidLevel(7)
+        } else if(value__stat_average_pixels_everyApiEvent <= 155){
+            document.getElementById("stat_average_pixels_everyApiEvent_isRaid").textContent = `[Raid: WTF IS GOING ON](I)`
+            setRaidLevel(8)
+        } else if(value__stat_average_pixels_everyApiEvent <= 165){
+            document.getElementById("stat_average_pixels_everyApiEvent_isRaid").textContent = `[Raid: BROOO IDKK WHAT TO SAY MORE](J)`
+            setRaidLevel(9)
+        } else if(value__stat_average_pixels_everyApiEvent > 175){
+            document.getElementById("stat_average_pixels_everyApiEvent_isRaid").textContent = `[Raid: EPIC RAAAAAAIIIIIIIIIIDDDDDDDDDDDDDD](K)`
+            setRaidLevel(10)
+        }
+
+        
+        globalInfos.averageList_fiveMinutes = globalInfos.averageList_fiveMinutes.filter((a) => {return a.time >= Date.now()-300000})
+
+        let value__stat_average_pixels_fiveminute = getAverage(globalInfos.averageList_fiveMinutes.map(a => {return a.value})).toFixed(2);
+        // document.getElementById("stat_average_pixels_fiveminute").textContent = value__stat_average_pixels_fiveminute
+
+        let value__total_pixels_edited_fiveminutes = _sum( globalInfos.averageList_fiveMinutes.map(a => {return a.value}) )
+
+        let elapsed_seconds = ( ( Date.now() - Math.min(...globalInfos.averageList_fiveMinutes.map(a => {return a.time})) ) / 1000 ).toFixed(0)
+
+        console.log("elapsed:",elapsed_seconds)
+        
+        document.getElementById("stat_average_pixels_onesecond").textContent = ( value__total_pixels_edited_fiveminutes / elapsed_seconds ).toFixed(2)
+
+
+        globalInfos.averageList_instant = globalInfos.averageList_instant.filter((a) => {return a.time >= Date.now()-5000})
+        
+        let value__total_pixels_edited_instant = _sum( globalInfos.averageList_instant.map(a => {return a.value}) )
+        let elapsed_seconds_instant = ( ( Date.now() - Math.min(...globalInfos.averageList_instant.map(a => {return a.time})) ) / 1000 ).toFixed(0)
+        
+        document.getElementById("stat_average_pixels_instant").textContent = ( value__total_pixels_edited_instant / elapsed_seconds_instant ).toFixed(2)
+
+        //console.log("averageList_lastMinute:",globalInfos.averageList_lastMinute)
+        globalInfos.averageList_lastMinute.push(value__total_pixels_edited_instant / elapsed_seconds_instant)
+        if(globalInfos.averageList_lastMinute.length > 60) {
+            globalInfos.averageList_lastMinute.shift()
+        }
+
+        
+
+    }
+    setInterval(() => {
+        _globalRefresh()
+    }, 1000)
+    _globalRefresh()
+
+    function _addToPixelCounter(value) {
+        currentNumber = currentNumber + value
+        document.getElementById("pixels_since_refresh").textContent = `${currentNumber}`
+    }
+    
+    setInterval(() => {
+
+        let diff = NumberToReach-currentNumber
+
+        for(let i in list_of_adds) {
+            //console.log(`testing diff=${diff} with i=${i}`)
+            if(diff >= parseInt(list_of_adds[i].v)) {
+                if(Debug) console.log(`  adding`,list_of_adds[i])
+                _addToPixelCounter(list_of_adds[i].add)
+                break;
+            }
+        }
+        
+    }, 100)
+
+
+
+    /**************/
+
+    function formatTime(millisecondes, format) {
+    /*
+    Renvoie un dictionnaire avec le formatage de la durée en ms, en jour, heures, etc...
+    YYYY: year
+    MM: month
+    DDDDD: jour de l'année
+    DD: jours du mois
+    hh: heure
+    mm: minute
+    ss: seconde
+    */
+    let v = {
+        y: 31536000000,
+        mo: 2628000000,
+        d: 86400000,
+        h: 3600000,
+        m: 60000,
+        s: 1000
+    }
+    let la_date = {
+        years: Math.floor(millisecondes/v.y),
+        months: Math.floor((millisecondes%v.y)/v.mo), // value de l'année divisée en douze poue faire à peu pres
+        all_days: Math.floor(millisecondes/v.d), // jours de l'année
+        days: Math.floor(((millisecondes%v.y)%v.mo)/v.d), // jours du mois
+        hours: Math.floor((((millisecondes%v.y)%v.mo)%v.d)/v.h),
+        minutes: Math.floor(((((millisecondes%v.y)%v.mo)%v.d)%v.h)/v.m),
+        seconds: Math.floor((((((millisecondes%v.y)%v.mo)%v.d)%v.h)%v.m)/v.s),
+        milliseconds: (((((millisecondes%v.y)%v.mo)%v.d)%v.h)%v.m)%v.s
+    }
+    //console.log(la_date)
+
+    function formatThis(thing, length=2) {
+        return `0000${thing}`.substr(-length)
+    }
+
+    let return_string = format.replace("YYYY", la_date.years).replace("MM", formatThis(la_date.months)).replace("DDDDD", la_date.all_days).replace("DD", formatThis(la_date.days)).replace("hh", formatThis(la_date.hours)).replace("mm", formatThis(la_date.minutes)).replace("ss", formatThis(la_date.seconds)).replace("ms", formatThis(la_date.milliseconds, 3))
+
+    return return_string
+}
+
+
+    
+    
+</script>
