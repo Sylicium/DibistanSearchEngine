@@ -1,0 +1,38 @@
+{
+  "name": "dibistansearchengine",
+  "version": "1.0.0",
+  "description": "Le moteur de recherche 100% Dibistanais",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sylicium/DibistanSearchEngine.git"
+  },
+  "keywords": [
+    "dibim",
+    "search",
+    "engin",
+    "moteur",
+    "recherche",
+    "internet",
+    "dibistan",
+    "dirtybiologistan",
+    "monde",
+    "rechercher",
+    "trouver",
+    "dibi",
+    "langue"
+  ],
+  "author": "Sylicium",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Sylicium/DibistanSearchEngine/issues"
+  },
+  "homepage": "https://github.com/Sylicium/DibistanSearchEngine#readme"
+}

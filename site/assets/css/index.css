@@ -8,6 +8,10 @@ body {
 
 
 
+.svg_loupeSearch {
+    color: white;
+}
+
 #Page_makeSearch div.mainLogo {
     width: 100%;
     padding: 20px;
@@ -36,12 +40,14 @@ body {
     justify-content: center;
     height: 100%;
     flex-direction: column;
+    width: 100%;
+    overflow: hidden;
 }
 
 #mainSearchBar {
-    border: 1px solid whitesmoke;
-    min-width: 300px;
-    max-width: 500px;
+    border: 1px solid transparent;
+    width: calc(35vh + 8vw); /* calc(35vh + 8vw); */
+    max-width: 100vw;
     border-radius: 50px;
     vertical-align: middle;
     background-color: rgb(78, 78, 255);
@@ -50,9 +56,12 @@ body {
     transition: 0.2s all;
 }
 #mainSearchBar:hover {
+    border: 1px solid whitesmoke;
     transition: 0.1s all;
-    border: 1px solid transparent;
-    background-color: rgb(57, 57, 252);
+    background-color: rgb(67, 67, 240);
+}
+#mainSearchBar div.coin-gauche {
+    width: 15px;
 }
 #mainSearchBar_input {
     outline: none;
@@ -60,10 +69,13 @@ body {
     border: 1px solid transparent;
     vertical-align: middle;
     color: white;
-    font-family: calibri;
+    font-family: helvetica, calibri;
     font-size: 1.8vh;
-    padding: 10px 20px;
+    padding: 10px 3px;
     flex: 1 0;
+}
+#mainSearchBar_input::placeholder {
+    color: rgb(160,160,160);
 }
 #mainSearchBar_sendSearch {
     flex: 0 0;
