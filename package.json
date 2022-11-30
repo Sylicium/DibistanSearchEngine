@@ -34,5 +34,8 @@
   "bugs": {
     "url": "https://github.com/Sylicium/DibistanSearchEngine/issues"
   },
-  "homepage": "https://github.com/Sylicium/DibistanSearchEngine#readme"
+  "homepage": "https://github.com/Sylicium/DibistanSearchEngine#readme",
+  "dependencies": {
+    "cookie-parser": "^1.4.6"
+  }
 }

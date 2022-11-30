@@ -7,6 +7,8 @@ let config = require("./config")
 const express = require('express');
 const Discord = require("discord.js");
 const app = express();
+var cookieParser = require('cookie-parser');
+app.use(cookieParser());
 app.use(express.urlencoded())
 app.use(express.json())
 const serv = require('http').createServer(app);
@@ -64,6 +66,7 @@ function getQueryFile(infos) {
         "{{infos.result.count}}": infos.result.count,
         "{{infos.result.processTime}}": somef.formatTime(infos.result.processTime, "ss,ms secondes"),
         "{{infos.results}}": infos.results,
+        "{{infos.colorTheme}}": infos.colorTheme,
     })
     return page
 }
@@ -112,13 +115,20 @@ module.exports.run = () => {
                     the_results = [SE.getNoResultToQueryChunk()]
                 }
 
+                let colorTheme = `${ (req.cookies.colorTheme != undefined && req.cookies.colorTheme == "white" ) ? "theme-white" : "theme-dark"}`
+                if(req.query.forceTheme != undefined) {
+                    if(req.query.forceTheme == "dark") { colorTheme = "theme-dark" }
+                    else if(req.query.forceTheme == "white") { colorTheme = "theme-white" }
+                }
+
                 let file = getQueryFile({
                     query: req.query.query,
                     result: {
                         count: the_results.length,
                         processTime: processTime
                     },
-                    results: the_results.join("")
+                    colorTheme: colorTheme,
+                    results: the_results.join(""),
                 })
 
                 return res.send(file)

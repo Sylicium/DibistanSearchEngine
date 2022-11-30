@@ -1,16 +1,44 @@
 
 * {
-    --background-color: #212327;
+
+}
+body.theme-dark {
+    transition: 0.5s all;
+    --background-color: #212327; /* white: e9e9e9 */
+    --color-theme-actual: #e9e9e9;
+    --color-theme-other: #212327;
     --grey-300: #a7acb4;
     --grey-400: #979ca4;
     --search-margin-page: 130px;
     --page-link-color: #99BEFF;
+    --page-link-extreme-color: whitesmoke;
+    --dibim-logo-color: white;
+    --dibim-logo-color-isInverted: 0;
+    --dibim-searchBar-boxshadow: 0px 5px 5px 5px rgb(40, 40, 40);
+    --dibim-searchBar-boxshadow-hover: 0px 5px 5px 5px rgb(30, 30, 30);
 }
+body.theme-white {
+    transition: 0.5s all;
+    --background-color: #e9e9e9; /* white: e9e9e9 */
+    --color-theme-actual: #e9e9e9;
+    --color-theme-other: #212327;
+    --grey-300: #353535;
+    --grey-400: #2e2e2e;
+    --search-margin-page: 130px;
+    --page-link-color: #1167ff;
+    --page-link-extreme-color: black;
+    --dibim-logo-color: #212327;
+    --dibim-logo-color-isInverted: 1;
+    --dibim-searchBar-boxshadow: 0px 3px 5px 5px rgb(205, 205, 205);
+    --dibim-searchBar-boxshadow-hover: 0px 3px 5px 5px rgb(185, 185, 185);
+}
+
 
 body {
     background-color: var(--background-color);
     font-family: helvetica, calibri;
 }
+
 
 
 .breakTextThreeDots {
@@ -46,12 +74,12 @@ body {
 }
 #allPage div.mainBar div.searchTypeBar div.type.selected {
     border-bottom: 3px solid #5977ff;
-    color: white;
+    color: var(--page-link-extreme-color);
 }
 #allPage div.mainBar div.searchTypeBar div.type:hover:not(.selected) {
     border-bottom: 3px solid #5977ff77;
-    color: white;
-    transition: 0.2s all;
+    color: var(--page-link-extreme-color);
+    transition: 0.1s all;
 }
 #allPage div.mainBar div.searchTypeBar div.type .logo {
     width: 2.5vh;
@@ -68,6 +96,55 @@ body {
     color: white;
 }
 
+
+
+#allPage div.mainBar div.searchBar_andSettings {
+    display: flex;
+    flex-direction: row;
+}
+#allPage div.mainBar div.searchBar_andSettings div.buttonList {
+    display: flex;
+    justify-content: right;
+    margin-left: auto;
+    width: fit-content;
+    align-items: center;
+    margin-right: 10px;
+}
+#allPage div.mainBar div.searchBar_andSettings div.buttonList div.button {
+    border: 1px solid var(--grey-300);
+    width: fit-content;
+    height: fit-content;
+    padding: 3px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.1s all;
+}
+#allPage div.mainBar div.searchBar_andSettings div.buttonList div.button:hover {
+    transition: 0.1s all;
+}
+#allPage div.mainBar div.searchBar_andSettings div.buttonList div.button .logo {
+    width: 4vh;
+    fill: var(--grey-300)
+}
+
+#allPage div.mainBar div.searchBar_andSettings div.buttonList div.button.switchColorTheme {
+    background-color: var(--color-theme-actual);
+    transition: 0.1s all;
+}
+#allPage div.mainBar div.searchBar_andSettings div.buttonList div.button.switchColorTheme:hover {
+    background-color: var(--color-theme-other);
+}
+#allPage div.mainBar div.searchBar_andSettings div.buttonList div.button.switchColorTheme:hover .logo {
+    fill: var(--color-theme-actual);
+    transition: 0.1s all;
+}
+
+
+#mainSearchBar_form {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
 #mainSearchBar_form div.mainLogo {
     margin: 10px;
 }
@@ -75,7 +152,7 @@ body {
     display: flex;
     flex-direction: row;
     align-items: center;
-    color: white;
+    color: var(--dibim-logo-color);
     font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
     font-size: 3vh;
     justify-self: center;
@@ -87,13 +164,9 @@ body {
     border-radius: 10px;
     /*margin: 3px;*/
     width: 5vh;
+    filter: invert(var(--dibim-logo-color-isInverted));
 }
 
-#mainSearchBar_form {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-}
 
 #mainSearchBar {
     border: 1px solid transparent;
@@ -102,7 +175,7 @@ body {
     border-radius: 50px;
     vertical-align: middle;
     background-color: rgb(78, 78, 255);
-    box-shadow: 0px 5px 5px 5px rgb(40, 40, 40);
+    box-shadow: var(--dibim-searchBar-boxshadow);
     display: flex;
     transition: 0.2s all;
 }
@@ -110,7 +183,7 @@ body {
     /*border: 1px solid whitesmoke;
     background-color: rgb(67, 67, 240);*/
     transition: 0.2s all;
-    box-shadow: 0px 5px 5px 5px rgb(30, 30, 30);
+    box-shadow: var(--dibim-searchBar-boxshadow-hover);
 }
 
 #mainSearchBar:hover button#mainSearchBar_sendSearch {
@@ -235,7 +308,7 @@ body {
     margin: 0px 2px;
 }
 #searchResultList div.searchResult div.urlPreview span.domain {
-    color: whitesmoke;
+    color: var(--page-link-extreme-color);
     font-size: 1.5vh;
 }
 #searchResultList div.searchResult div.urlPreview span:not(.domain) {
