@@ -1,0 +1,246 @@
+
+* {
+    --background-color: #212327;
+    --grey-300: #a7acb4;
+    --grey-400: #979ca4;
+    --search-margin-page: 130px;
+    --page-link-color: #99BEFF;
+}
+
+body {
+    background-color: var(--background-color);
+    font-family: helvetica, calibri;
+}
+
+
+.breakTextThreeDots {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+}
+
+
+
+#allPage div.mainBar {
+    border-bottom: 1px solid gray;
+}
+#allPage div.mainBar div.searchTypeBar {
+    display: flex;
+    flex-direction: row;
+    margin-left: var(--search-margin-page);
+    justify-content: space-between;
+    width: fit-content;
+}
+#allPage div.mainBar div.searchTypeBar div.type {
+    display: flex;
+    flex-direction: row;
+    padding: 3px;
+    align-items: center;
+    color: var(--grey-300);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin: 0px 5px 0px 5px;
+    transition: 0.2s all;
+}
+#allPage div.mainBar div.searchTypeBar div.type.selected {
+    border-bottom: 3px solid #5977ff;
+    color: white;
+}
+#allPage div.mainBar div.searchTypeBar div.type:hover:not(.selected) {
+    border-bottom: 3px solid #5977ff77;
+    color: white;
+    transition: 0.2s all;
+}
+#allPage div.mainBar div.searchTypeBar div.type .logo {
+    width: 2.5vh;
+    padding: 3px;
+    padding-right: 0px;
+}
+#allPage div.mainBar div.searchTypeBar div.type .logo.disabled path.gray{
+    color: var(--grey-300);
+    fill: var(--grey-300);
+}
+
+
+.svg_loupeSearch {
+    color: white;
+}
+
+#mainSearchBar_form div.mainLogo {
+    margin: 10px;
+}
+#mainSearchBar_form div.mainLogo div.logoBox {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    color: white;
+    font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+    font-size: 3vh;
+    justify-self: center;
+    width: fit-content;
+    margin: 0px auto;
+}
+
+#mainSearchBar_form div.mainLogo div.logoBox img.logo {
+    border-radius: 10px;
+    margin: 3px;
+    width: 5vh;
+}
+
+#mainSearchBar_form {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+#mainSearchBar {
+    border: 1px solid transparent;
+    width: calc(40vh + 12vw); /* calc(35vh + 8vw); */
+    max-width: 100vw;
+    border-radius: 50px;
+    vertical-align: middle;
+    background-color: rgb(78, 78, 255);
+    box-shadow: 0px 5px 5px 5px rgb(40, 40, 40);
+    display: flex;
+    transition: 0.2s all;
+}
+#mainSearchBar:hover {
+    /*border: 1px solid whitesmoke;
+    background-color: rgb(67, 67, 240);*/
+    transition: 0.2s all;
+    box-shadow: 0px 5px 5px 5px rgb(30, 30, 30);
+}
+
+#mainSearchBar:hover button#mainSearchBar_sendSearch {
+    animation-name: rorateLoupe;
+    animation-duration: 1s;
+}
+
+#mainSearchBar div.coin-gauche {
+    width: 15px;
+}
+#mainSearchBar_input {
+    outline: none;
+    background: transparent;
+    border: 1px solid transparent;
+    vertical-align: middle;
+    color: white;
+    font-family: helvetica, calibri;
+    font-size: 1.8vh;
+    padding: 10px 3px;
+    flex: 1 0;
+}
+#mainSearchBar_input::placeholder {
+    color: rgb(160,160,160);
+}
+#mainSearchBar_sendSearch {
+    flex: 0 0;
+    outline: none;
+    background: transparent;
+    border: 1px solid transparent;
+    vertical-align: middle;
+    margin: 5px;
+    padding: 5px;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: 0.5s all;
+}
+#mainSearchBar_sendSearch:hover {
+    background-color: rgb(47, 47, 252);
+    filter: brightness(0.9);
+}
+
+@keyframes rorateLoupe {
+    0% { transform: rotate(0deg) scale(1.3); }
+    100% { transform: rotate(360deg) scale(1); }
+}
+
+
+#allPage div.infoBar {
+    margin: 10px 0px 20px 0px;
+    margin-left: var(--search-margin-page);
+}
+#allPage div.infoBar div.resultStats {
+    font-size: 1.5vh;
+    color: var(--grey-400);
+}
+
+#searchResultList {
+    /*
+    display: grid;
+    --max-space: 10px;
+    height: 100%;*/
+    display: flex;
+    flex-direction: column;
+    margin-left: var(--search-margin-page);
+}
+
+#searchResultList div.searchResult {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 30px;
+    max-width: 30vw;
+    overflow: hidden;
+    padding-left: 5px;
+}
+#searchResultList div.searchResult.advertisement {
+    /*border-left: 1px solid orange;*/
+    border-radius: 5px;
+    /*padding-top: 10px;
+    padding-bottom: 10px;*/
+}
+#searchResultList div.searchResult div {
+    margin: 2px;
+}
+#searchResultList div.searchResult div.urlPreview {
+    color: var(--grey-300);
+    font-size: 1.35vh;
+    /*cursor: pointer;*/
+}
+#searchResultList div.searchResult:not(.advertisement) div.urlPreview span.advertisement {
+    display: none;
+}
+#searchResultList div.searchResult.advertisement div.urlPreview span.advertisement {
+    display: initial;
+    font-weight: bold;
+    padding-right: 7px;
+    color: darkgoldenrod;
+}
+#searchResultList div.searchResult div.urlPreview span.domain {
+    color: whitesmoke;
+}
+#searchResultList div.searchResult div.urlPreview span:not(.domain) {
+    color: var(--grey-300);
+}
+
+#searchResultList div.searchResult div.title {
+    color: var(--page-link-color);
+    font-size: 2vh;
+    margin-left: 3px;
+    cursor: pointer;
+}
+#searchResultList div.searchResult div.title a {
+    color: var(--page-link-color);
+    text-decoration: none;
+}
+#searchResultList div.searchResult div.title:hover {
+    text-decoration: underline;
+}
+#searchResultList div.searchResult div.description {
+    color: var(--grey-300);
+    font-size: 1.5vh;
+    margin-left: 3px;
+    
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+    line-height: 1.5;
+    letter-spacing: normal;
+}
+#searchResultList div.searchResult div.description span.keyword {
+    font-weight: bold;
+}

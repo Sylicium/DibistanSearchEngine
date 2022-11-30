@@ -3,9 +3,11 @@
     <title>Dibim</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <meta charset="utf-8">
-    <meta property="og:title" content="DBG gouv | Elections > Ambassadeurs Terre Inconnue">
-    <meta property="og:description" content="Votez pour les élire les Ambassadeurs en Terre Inconnue">
-    <meta property="og:image" content="https://dirtybiology.captaincommand.repl.co/site/img/icone_vote_blanc.png">
+    <meta property="og:site_name" content="Dibim">
+    <meta property="og:title" content="{{infos.query}} - Recherche Dibim">
+    <meta property="og:description" content="Le 1er moteur de recherche 100% dibistanais !
+Tuclikare monior coDonis tuan..">
+    <meta property="og:image" content="/assets/img/logo_d_2.jpg">
     <meta name="theme-color" content="#1A5DF7">
 
     <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
@@ -17,7 +19,7 @@
 
     
 <div id="Page_makeSearch">
-    <form id="mainSearchBar_form" onsubmit="formSubmit(this)">
+    <form method="get" id="mainSearchBar_form" onsubmit="return formSubmit(this)">
         <div class="mainLogo">
             <div class="logoBox">
                 <img class="logo" src="/assets/img/logo_d_2.jpg">
@@ -26,10 +28,10 @@
         </div>
         <div id="mainSearchBar">
             <div class="coin-gauche"></div>
-            <input name="query" id="mainSearchBar_input" placeholder="tuclikare monior coDonis tuan" value="">
-            <input name="is_bot" hidden></input>
-            <input name="client" value="opensearch" hidden></input>
-            <input name="client_type" value="web" hidden></input>
+            <input class="formSearchBar_query" name="query" id="mainSearchBar_input" placeholder="tuclikare monior coDonis tuan" value="">
+            <input class="formSearchBar_is_bot" name="is_bot" hidden></input>
+            <input class="formSearchBar_client" name="client" value="opensearch" hidden></input>
+            <input class="formSearchBar_client_type" name="client_type" value="web" hidden></input>
             <button type="submit" id="mainSearchBar_sendSearch">
                 <svg class="svg_loupeSearch" focusable="false" viewBox="0 0 24 24" style="width:24px;height:24px;"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path></svg>
             </button>
@@ -49,7 +51,15 @@
 
 
 function formSubmit(that) {
-    window.location = 'localhost/search/' + that.search.value; return false;
+    try {
+        input_query = that.getElementsByClassName("formSearchBar_query")[0]
+        if(!input_query.value || input_query.value.length < 1) {
+            return false
+        }
+    } catch(e) {
+        console.error(e)
+    }
+    return true
 }
 
 
