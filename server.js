@@ -67,6 +67,7 @@ function getQueryFile(infos) {
         "{{infos.result.processTime}}": somef.formatTime(infos.result.processTime, "ss,ms secondes"),
         "{{infos.results}}": infos.results,
         "{{infos.colorTheme}}": infos.colorTheme,
+        "{{infos.colorTheme_svgPlace}}": (infos.colorTheme == "theme-white" ? SE.Datas.svg.moon : SE.Datas.svg.sun),
     })
     return page
 }
