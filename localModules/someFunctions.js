@@ -20,6 +20,8 @@ function splitAndJoin(text, dict) {
     return new_text
 }
 
+module.exports.capitalize = (str) => { return `${str[0].toUpperCase()}${str.slice(1)}` }
+
 module.exports.formatTime = formatTime
 function formatTime(millisecondes, format) {
     /*

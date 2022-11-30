@@ -62,7 +62,7 @@ function getQueryFile(infos) {
     page = somef.splitAndJoin(page, {
         "{{infos.query}}": infos.query,
         "{{infos.result.count}}": infos.result.count,
-        "{{infos.result.processTime}}": formatTime(infos.result.processTime, "ss,ms secondes"),
+        "{{infos.result.processTime}}": somef.formatTime(infos.result.processTime, "ss,ms secondes"),
         "{{infos.results}}": infos.results,
     })
     return page
@@ -105,19 +105,12 @@ module.exports.run = () => {
                 }
                 */
                 the_results = the_results.map(x => {
-                    return `<div class="searchResult">
-<div class="urlPreview">
-    <img class="urlFavicon" src="${SE.getFaviconUrl(x.url)}">
-    ${x.advertisement ? "<span class='advertisement'>Annonce</span>" : ""}
-    ${x.verified ? "<span class='verified'>Vérifié</span>" : ""}
-    ${SE.urlToSpan(x.url)}
-</div>
-<div class="title">
-    <a href="${x.url}" onclick="clickedOnLink(this)">${x.title}</a>
-</div>
-<div class="description">${SE.highlightKeywords(req.query.query, x.description)}</div>
-                </div>`
+                    return SE.getHTMLResultChunk(req.query.query, x)
                 })
+
+                if(the_results.length == 0) {
+                    the_results = [SE.getNoResultToQueryChunk()]
+                }
 
                 let file = getQueryFile({
                     query: req.query.query,

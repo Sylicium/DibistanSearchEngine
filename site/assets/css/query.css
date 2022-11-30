@@ -80,12 +80,12 @@ body {
     font-size: 3vh;
     justify-self: center;
     width: fit-content;
-    margin: 0px auto;
+    margin: 0px 10px auto;
 }
 
 #mainSearchBar_form div.mainLogo div.logoBox img.logo {
     border-radius: 10px;
-    margin: 3px;
+    /*margin: 3px;*/
     width: 5vh;
 }
 
@@ -257,7 +257,7 @@ body {
 }
 #searchResultList div.searchResult div.description {
     color: var(--grey-300);
-    font-size: 1.5vh;
+    font-size: 1.8vh;
     margin-left: 3px;
     
     display: -webkit-box;
@@ -270,4 +270,14 @@ body {
 }
 #searchResultList div.searchResult div.description span.keyword {
     font-weight: bold;
+}
+
+
+#searchResultList div.searchResult.noResult div.description {
+    display: flex;
+    align-items: center;
+}
+#searchResultList div.searchResult.noResult div.description svg.logoInfo {
+    margin-right: 5px;
+    font-size: 2.5vh;
 }
