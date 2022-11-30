@@ -230,7 +230,9 @@ module.exports.run = () => {
                 the_results = the_results.map(x => {
                     return `<div class="searchResult">
 <div class="urlPreview">
-    <span class="advertisement">Annonce</span>
+    <img class="urlFavicon" src="https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${x.url}?size=128">
+    ${x.advertisement ? "<span class='advertisement'>Annonce</span>" : ""}
+    ${x.verified ? "<span class='verified'>Vérifié</span>" : ""}
     ${urlToSpan(x.url)}
 </div>
 <div class="title">
