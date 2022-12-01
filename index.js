@@ -1,5 +1,8 @@
 
 
+//require("./fetchNewLinks/index_fetchNewLinks")
+
+
 
 let MONGODB_URL = "mongodb+srv://discordbot:B8ewi2d3PaQh6xz4@cluster0.wrmyx.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
 

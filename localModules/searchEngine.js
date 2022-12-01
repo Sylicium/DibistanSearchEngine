@@ -1,6 +1,7 @@
 
 
 let somef = require("./someFunctions")
+let Database = require("../fetchNewLinks/databaseParser")
 
 
 module.exports.SearchEngineManager = class {
@@ -14,9 +15,11 @@ module.exports.SearchEngineManager = class {
 
 module.exports.highlightKeywords = highlightKeywords
 function highlightKeywords(query, description) {
+    console.log("highlightKeywords:",query,description)
+    console.trace()
 
-    let query_list = query.split(" ").map(x => { return x.trim().toLowerCase() })
-    let description_list = description.split(" ").map(x => { return x.trim() })
+    let query_list = query.toLowerCase().match(/[\p{L}]{3,}/gu).map(x => { return x.trim() })
+    let description_list = description.match(/[\p{L}]{3,}/gu).map(x => { return x.trim() })
 
     description_list = description_list.map(x => {
         if(query_list.includes(x.toLowerCase())) return `<span class="keyword">${x}</span>`
@@ -57,10 +60,20 @@ module.exports.getLinksByQuery = getLinksByQuery
 function getLinksByQuery(query, infos) {
     /*
     infos = {
-        from: (req.query.fetchFrom ?? 0),
-        to: (req.query.fetchFrom != undefined ? (req.query.fetchFrom + 100) : 100),// 100 liens max par requete
+        from: (req.query.fetchFrom ?? 0), // min number of links
+        to: (req.query.fetchFrom != undefined ? (req.query.fetchFrom + 100) : 100),// max number of links. Max 100 liens par requete
     }
     */
+    if(infos.to != undefined) {
+        if(infos.to < 0) { infos.to = 0 }
+        else if(infos.to > 100) { infos.to = 100 }
+    }
+    infos = {
+        from: (infos.from ?? 0),
+        to: (infos.from != undefined ? (parseInt(infos.fetchFrom) + (infos.to != undefined ? infos.to : 100)) : 100),// 100 liens max par requete
+    }
+
+    return Database.getAllLinks()
 
     return [
         {
