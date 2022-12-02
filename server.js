@@ -93,6 +93,8 @@ module.exports.run = () => {
                 return res.sendFile(`${__dirname}${servEndpoints.site.relative}/index.html`)
             } else {
 
+                req.query.query = req.query.query.trim()
+
                 let started_processTime = Date.now()
 
                 let the_results = await SE.getLinksByQuery(req.query.query, {

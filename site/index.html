@@ -53,12 +53,13 @@ Tuclikare monior coDonis tuan..">
 function formSubmit(that) {
     try {
         input_query = that.getElementsByClassName("formSearchBar_query")[0]
-        if(!input_query.value || input_query.value.length < 1) {
+        if(!input_query.value || input_query.value.trim().length < 1) {
             return false
         }
     } catch(e) {
         console.error(e)
     }
+    input_query.value = input_query.value.trim()
     return true
 }
 
