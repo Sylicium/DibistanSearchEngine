@@ -78,7 +78,7 @@ module.exports.run = () => {
         return res.sendFile(`${__dirname}${servEndpoints.site.relative}${req.path}`)
     })
     
-    app.all("*", (req, res) => { // tout à la fin sinon le "*" catch à la place des autres app.get()
+    app.all("*", async (req, res) => { // tout à la fin sinon le "*" catch à la place des autres app.get()
 
         console.log(`[Web] ${req.method.toUpperCase()} -> ${req.url}`)
         console.log(req.query)
@@ -95,7 +95,7 @@ module.exports.run = () => {
 
                 let started_processTime = Date.now()
 
-                let the_results = SE.getLinksByQuery(req.query.query, {
+                let the_results = await SE.getLinksByQuery(req.query.query, {
                     from: (req.query.fetchFrom ?? 0),
                     to: (req.query.fetchFrom != undefined ? (req.query.fetchFrom + 100) : 100),// 100 liens max par requete
                 })

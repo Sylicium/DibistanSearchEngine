@@ -62,3 +62,23 @@ function formatTime(millisecondes, format) {
 
     return return_string
 }
+
+module.exports.getKeywords = getKeywords
+function getKeywords(query) {
+    return query.toLowerCase().match(/[\p{L}]{3,}/gu).map(x => { return x.trim() })
+}
+
+function sleep(time) {
+    return new Promise(resolve => setTimeout(resolve, time));
+}
+module.exports.sleep = sleep
+
+function genHex() { return "zrgfnkergkjn" }
+module.exports.genHex = this.genHex
+
+function any(list1, list2) {
+    for(let i in list1) {
+        if(i in list2) return true
+    }
+    return false
+}module.exports.any = any

@@ -2,6 +2,8 @@
 //const logger = new (require("./logger"))()
 //const somef = require("./someFunctions")
 
+const somef = require('../localModules/someFunctions');
+
 const MongoClient = require('mongodb').MongoClient;
 
 
@@ -18,12 +20,6 @@ const MongoClient = require('mongodb').MongoClient;
     
 }*/
 
-somef = {
-    sleep: (time) => {
-        return new Promise(resolve => setTimeout(resolve, time));
-    },
-    genHex: () => { return "zrgfnkergkjn" }
-}
 
 logger = {
     info: (...args) => { console.log(...args) },
@@ -143,10 +139,10 @@ class Database {
     async getAllLinks() {
         return this.Mongo.db(this._usedDataBaseName).collection("links").find({ }).toArray()
     }
-    async getAllLinks_notChecked() {
+    async getAllLinks_notChecked(limitLength=10000) {
         return this.Mongo.db(this._usedDataBaseName).collection("unfetchedLinks").find().sort({
             "createdAt": 1
-        }).toArray()
+        }).limit(limitLength).toArray()
     }
 
     async getAllLinksByKeywords(keywordList) {
@@ -154,14 +150,42 @@ class Database {
         let listOfFindTests = []
         for(let i in keywordList_regex) {
             listOfFindTests.push(...[
-                { "description": keywordList_regex[i] },
-                { "title": keywordList_regex[i] },
+                { "description": { 
+                    '$regex': keywordList_regex[i], '$options': 'i' 
+                    }
+                },
+                { "title": { 
+                        '$regex': keywordList_regex[i], '$options': 'i' 
+                    }
+                },
                 { "url": keywordList_regex[i] },
+                { "keywords": keywordList_regex[i] },
             ])
         }
-        return this.Mongo.db(this._usedDataBaseName).collection("links").find({
+        console.log("listOfFindTests",listOfFindTests)
+        return (await this.Mongo.db(this._usedDataBaseName).collection("links").find({
+            
             $or: [...listOfFindTests]
-        }).limit(100).toArray()
+        }).toArray()).sort((a,b) => {
+            let A_any_in_title = somef.any(somef.getKeywords(a.title), keywordList_regex)
+            let A_any_in_url = somef.any(somef.getKeywords(a.url), keywordList_regex)
+            let B_any_in_title = somef.any(somef.getKeywords(b.title), keywordList_regex)
+            let B_any_in_url = somef.any(somef.getKeywords(b.url), keywordList_regex)
+
+            if(A_any_in_title && !B_any_in_title) {
+                return -1
+            } else if(B_any_in_title && !A_any_in_title) {
+                return 1
+            } else {
+                if( (A_any_in_title && A_any_in_url) && (!B_any_in_url) ) {
+                    return -1
+                } else if( (B_any_in_title && B_any_in_url) && (!A_any_in_url) ) {
+                    return 1
+                } else {
+                    return 0
+                }
+            }
+        })
     }
 
     /**
@@ -191,22 +215,23 @@ class Database {
 
     async markLinkAsFetched(datas) {
         let page = {
-            url: datas.url,
-            title: datas.title, // document.title
-            description: datas.description, // first <p> ou suite de texte
-            keywords: datas.keywords,
+            url: datas.url.trim(),
+            title: datas.title.trim(), // document.title
+            description: datas.description.trim(), // first <p> ou suite de texte
+            keywords: datas.keywords.map(x => { return x.trim() }),
             lastFetch: Date.now(),
             appearenceCount: 1,
             createdAt: Date.now(),
         }
+        if(datas.title == "" || datas.description == "") return false
         await this.Mongo.db(this._usedDataBaseName).collection("links").updateOne(
             { "url": datas.url },
             {
                 $set: {
-                    [`url`]: datas.url,
-                    [`title`]: datas.title, // document.title
-                    [`description`]: datas.description, // first <p> ou suite de texte
-                    [`keywords`]: datas.keywords,
+                    [`url`]: datas.url.trim(),
+                    [`title`]: datas.title.trim(), // document.title
+                    [`description`]: datas.description.trim(), // first <p> ou suite de texte
+                    [`keywords`]: datas.keywords.map(x => { return x.trim() }),
                     [`lastFetch`]: Date.now(),
                     [`appearenceCount`]: 1,
                     [`createdAt`]: Date.now(),

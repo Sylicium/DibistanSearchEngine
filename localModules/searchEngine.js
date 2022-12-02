@@ -15,16 +15,35 @@ module.exports.SearchEngineManager = class {
 
 module.exports.highlightKeywords = highlightKeywords
 function highlightKeywords(query, description) {
-    console.log("highlightKeywords:",query,description)
-    console.trace()
 
-    let query_list = query.toLowerCase().match(/[\p{L}]{3,}/gu).map(x => { return x.trim() })
-    let description_list = description.match(/[\p{L}]{3,}/gu).map(x => { return x.trim() })
+    //console.log("query, description",query,description)
 
+    let query_list;
+    if(query.length > 3) {
+        query_list = query.toLowerCase().match(/[\p{L}]{3,}/gu).map(x => { return x.trim() })
+    } else {
+        query_list = query.split(" ").map(x => { return x.trim() })
+    }
+    let description_list;
+    if(description.length > 3) {
+        description_list = description.toLowerCase().match(/[\p{L}]{3,}/gu).map(x => { return x.trim() })
+    } else {
+        description_list = description.split(" ").map(x => { return x.trim() })
+    }
     description_list = description_list.map(x => {
         if(query_list.includes(x.toLowerCase())) return `<span class="keyword">${x}</span>`
         else return x
     })
+
+    /*let query_list = query.toLowerCase()
+    let new_description = description
+    for(let i in query_list) {
+        new_description.split(query_list[i]).join(`<span class="keyword">${x}</span>`)
+    }
+
+    let description_list = description
+    */
+
     return description_list.join(" ")
 }
 
@@ -41,9 +60,9 @@ function urlToSpan(url) {
     temp = temp.split("?")[0]
     temp = temp.split("/")
     list = []
-    console.log("temp:",temp)
+        //console.log("temp:",temp)
     for(let i=0; i< temp.length; i++) {
-        console.log("temp i:",temp[i])
+        //console.log("temp i:",temp[i])
         if(i == 0) {
             list.push(`<span class="domain">${temp[i]}</span>`)
         } else {
@@ -55,9 +74,8 @@ function urlToSpan(url) {
     return str
 }
 
-
 module.exports.getLinksByQuery = getLinksByQuery
-function getLinksByQuery(query, infos) {
+async function getLinksByQuery(query, infos) {
     /*
     infos = {
         from: (req.query.fetchFrom ?? 0), // min number of links
@@ -73,7 +91,9 @@ function getLinksByQuery(query, infos) {
         to: (infos.from != undefined ? (parseInt(infos.fetchFrom) + (infos.to != undefined ? infos.to : 100)) : 100),// 100 liens max par requete
     }
 
-    return Database.getAllLinks()
+    console.log("Database:",Database)
+    let keywords = query.split(" ").map(x => { return x.trim() })
+    return await Database.getAllLinksByKeywords(keywords)
 
     return [
         {
@@ -129,12 +149,13 @@ function getLinksByQuery(query, infos) {
 
 module.exports.getHTMLResultChunk = getHTMLResultChunk
 function getHTMLResultChunk(query, urlDBObject) {
+    //console.log("urlDBObject",urlDBObject)
     return `<div class="searchResult">
         <div class="urlPreview">
         <img class="urlFavicon" src="${getFaviconUrl(urlDBObject.url)}">
         ${urlDBObject.advertisement ? "<span class='advertisement'>Annonce</span>" : ""}
         ${urlDBObject.verified ? "<span class='verified'>Vérifié</span>" : ""}
-        ${urlToSpan(urlDBObject.url)}
+        ${urlToSpan(decodeURI(urlDBObject.url))}
         </div>
         <div class="title">
         <a href="${urlDBObject.url}" onclick="clickedOnLink(this)">${urlDBObject.title}</a>

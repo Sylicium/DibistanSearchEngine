@@ -229,7 +229,7 @@ async function oneMoreLoop(chunkLength) {
     newFetchedToPushToDatabase = []
     successfullyFetchedLinks_toDelete = []
 
-    let DB_no_fetchedLinks = await Database.getAllLinks_notChecked()
+    let DB_no_fetchedLinks = await Database.getAllLinks_notChecked(100)
     console.log("DB_no_fetchedLinks",DB_no_fetchedLinks)
     if(DB_no_fetchedLinks.length != 0) new_to_check = DB_no_fetchedLinks.map(x => { return x.url })
     //new_to_check = new_to_check_list
@@ -412,14 +412,22 @@ async function getAllLinksInPage_v2(url, mustContainWordsInPage=[]) {
 
         let keywords_temp = the_description_templist.join(" ")
         let keywords = keywords_temp.match(/[\p{L}]{3,}/gu)
+        if(keywords == null) keywords = []
         //console.log("successfullyFetchedLinks_toDelete ++")
         //console.log("successfullyFetchedLinks_toDelete=",successfullyFetchedLinks_toDelete)
-        Database.markLinkAsFetched({
-            url: url,
-            title: page_title, // document.title
-            description: the_description, // first <p> ou suite de texte
-            keywords: keywords,
-        })
+        
+        if(res.data.length < 10000 || page_title == "") {
+            
+        } else {
+            Database.markLinkAsFetched({
+                url: url,
+                title: page_title, // document.title
+                description: the_description, // first <p> ou suite de texte
+                keywords: keywords,
+            })
+        }
+
+
         /******************************************/
 
         if(mustContainWordsInPage.length == 0) {
