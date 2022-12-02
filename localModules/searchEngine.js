@@ -19,13 +19,13 @@ function highlightKeywords(query, description) {
     //console.log("query, description",query,description)
 
     let query_list;
-    if(query.length > 3) {
+    if(query.match(/[\p{L}]{3,}/gu)) {
         query_list = query.toLowerCase().match(/[\p{L}]{3,}/gu).map(x => { return x.trim() })
     } else {
         query_list = query.split(" ").map(x => { return x.trim() })
     }
     let description_list;
-    if(description.length > 3) {
+    if(description.match(/[\p{L}]{3,}/gu)) {
         description_list = description.toLowerCase().match(/[\p{L}]{3,}/gu).map(x => { return x.trim() })
     } else {
         description_list = description.split(" ").map(x => { return x.trim() })
@@ -182,3 +182,23 @@ let Datas = {
     }
 }
 module.exports.Datas = Datas
+
+
+
+
+class Dibsilon {
+    constructor() {
+        this.Algorithm = {
+            copyright: "Dibsilon (c) Sylicium 2022",
+            lastVersion: "0.1.0-alpha",
+            date: "02/12/2022",
+            developer: "Sylicium",
+        }
+    }
+
+    sortByQuery(query, allDBObjects) {
+
+    }
+
+
+}

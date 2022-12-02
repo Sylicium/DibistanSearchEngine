@@ -3,8 +3,11 @@
 //require("./fetchNewLinks/index_fetchNewLinks")
 
 
+try {
+    require("dotenv").config()
+} catch(e) { }
 
-let MONGODB_URL = "mongodb+srv://discordbot:B8ewi2d3PaQh6xz4@cluster0.wrmyx.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
+let MONGODB_URL = process.env.MONGODB_URL
 
 
 const Database = require("./fetchNewLinks/databaseParser.js")

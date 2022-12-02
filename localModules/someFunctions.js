@@ -81,4 +81,8 @@ function any(list1, list2) {
         if(i in list2) return true
     }
     return false
-}module.exports.any = any
+}
+module.exports.any = any
+
+function removeDuplicate(list) { return list.filter((x, i) => i === list.indexOf(x)) }
+module.exports.removeDuplicate = removeDuplicate

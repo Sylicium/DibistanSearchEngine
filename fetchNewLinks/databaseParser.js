@@ -158,7 +158,10 @@ class Database {
                         '$regex': keywordList_regex[i], '$options': 'i' 
                     }
                 },
-                { "url": keywordList_regex[i] },
+                { "url": { 
+                    '$regex': keywordList_regex[i], '$options': 'i' 
+                    }
+                },
                 { "keywords": keywordList_regex[i] },
             ])
         }
@@ -169,8 +172,11 @@ class Database {
         }).toArray()).sort((a,b) => {
             let A_any_in_title = somef.any(somef.getKeywords(a.title), keywordList_regex)
             let A_any_in_url = somef.any(somef.getKeywords(a.url), keywordList_regex)
+            let A_any_in_description = somef.any(somef.getKeywords(a.description), keywordList_regex)
+
             let B_any_in_title = somef.any(somef.getKeywords(b.title), keywordList_regex)
             let B_any_in_url = somef.any(somef.getKeywords(b.url), keywordList_regex)
+            let B_any_in_description = somef.any(somef.getKeywords(a.description), keywordList_regex)
 
             if(A_any_in_title && !B_any_in_title) {
                 return -1
@@ -182,7 +188,13 @@ class Database {
                 } else if( (B_any_in_title && B_any_in_url) && (!A_any_in_url) ) {
                     return 1
                 } else {
-                    return 0
+                    if(A_any_in_description && !B_any_in_description) {
+                        return -1
+                    } else if(B_any_in_description && !A_any_in_description) {
+                        return 1
+                    } else {
+                        return 0
+                    }
                 }
             }
         })
@@ -214,11 +226,13 @@ class Database {
     }
 
     async markLinkAsFetched(datas) {
+        //let keywords = somef.removeDuplicate(datas.keywords.map(x => { return x.trim() }))
+        let keywords =datas.keywords.map(x => { return x.trim() }) // ne pas retirer les doublons pour pouvoir compter le nombre de match sur la page
         let page = {
             url: datas.url.trim(),
             title: datas.title.trim(), // document.title
             description: datas.description.trim(), // first <p> ou suite de texte
-            keywords: datas.keywords.map(x => { return x.trim() }),
+            keywords: keywords,
             lastFetch: Date.now(),
             appearenceCount: 1,
             createdAt: Date.now(),
@@ -231,7 +245,7 @@ class Database {
                     [`url`]: datas.url.trim(),
                     [`title`]: datas.title.trim(), // document.title
                     [`description`]: datas.description.trim(), // first <p> ou suite de texte
-                    [`keywords`]: datas.keywords.map(x => { return x.trim() }),
+                    [`keywords`]: keywords,
                     [`lastFetch`]: Date.now(),
                     [`appearenceCount`]: 1,
                     [`createdAt`]: Date.now(),
