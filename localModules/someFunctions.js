@@ -20,6 +20,10 @@ function splitAndJoin(text, dict) {
     return new_text
 }
 
+let _normalize = (str) => { return (`${str}`.normalize('NFKD').replace(/[^\w ]/g, '')).toLowerCase().replace(/\s+/g, ' ').trim() }
+
+module.exports._normalize = _normalize
+
 module.exports.capitalize = (str) => { return `${str[0].toUpperCase()}${str.slice(1)}` }
 
 module.exports.formatTime = formatTime

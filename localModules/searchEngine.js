@@ -93,7 +93,11 @@ async function getLinksByQuery(query, infos) {
 
     console.log("Database:",Database)
     let keywords = query.split(" ").map(x => { return x.trim() })
-    return await Database.getAllLinksByKeywords(keywords)
+    
+    console.log("[LOG-112] START getLinksByQuery", new Date())
+    let the_all_links = await Database.getAllLinksByKeywords(keywords)
+    console.log("[LOG-112] END getLinksByQuery", new Date())
+    return the_all_links
 
     return [
         {
@@ -183,22 +187,298 @@ let Datas = {
 }
 module.exports.Datas = Datas
 
+/*
+
+Match {
+  $or: [
+    { title: /organisati/i } , 
+    { description: /organisati/i } , 
+    { keywords: /organisati/i } , 
+  ]
+}
+Group {
+  _id: "test",
+  count: {
+    $push: {
+          "keywordsCount": { $size: "$keywords" },
+          "cc2": { $size: "$keywords" },
+    }
+  }
+}
+
+AddFileds {
+  "isMatch": {
+    $regexMatch: {
+      input: "$title",
+      regex: /organisati/,
+      options: "i"
+    }
+  }
+}
+
+
+Group {
+  _id: "test",
+  count: {
+    $push: {
+      $cond : [
+        
+        {
+          $regexMatch: {
+            input: "$title",
+            regex: /organisati/,
+            options: "i"
+          }
+        },
+        {
+          "keywordsCount": { $size: "$keywords" },
+          "cc2": { $size: "$keywords" },
+        },
+        "$$REMOVE"
+      ]
+    }
+  },
+  
+}
+
+
+ keywordsMatched: {
+    $map: {
+      input: "$keywords",
+      as: "kw",
+      in: {
+        $cond: [
+          {
+            $regexMatch: {
+              input: "$$kw",
+              regex: /organisati/,
+              options: "i"
+            }
+          },
+          "$$kw",
+          "$$REMOVE"
+        ]
+      }
+    }
+  }
 
 
 
-class Dibsilon {
-    constructor() {
-        this.Algorithm = {
-            copyright: "Dibsilon (c) Sylicium 2022",
-            lastVersion: "0.1.0-alpha",
-            date: "02/12/2022",
-            developer: "Sylicium",
+
+
+{
+    $accumulator: {
+      init: function() {                        // Set the initial state
+        return 0
+      },
+      accumulate: function(state, numCopies) {  // Define how to update the state
+        return (state.match(/organisati/i) ? 1 : 0)
+      },
+      accumulateArgs: ["$keywords"],              // Argument required by the accumulate function
+      merge: function(state1, state2) {         // When the operator performs a merge,
+        return state1 + state2
+      },
+      finalize: function(state) {               // After collecting the results from all documents,
+        return state        // calculate the average
+      },
+      lang: "js"
+    }
+}
+
+
+{
+  _id: "test",
+  count: {
+    $push: {
+      $cond : [
+        
+        {
+          $regexMatch: {
+            input: "$title",
+            regex: /organisati/,
+            options: "i"
+          }
+        },
+        {
+          "keywordsCount": { $size: "$keywords" },
+          "cc2": { $size: "$keywords" },
+        },
+        "$$REMOVE"
+      ]
+    }
+  },
+  "keywordsMatched": {
+    $push: {
+      $cond : [
+        {
+          $regexMatch: {
+            input: "$arrayElemAt",
+            regex: /organisati/,
+            options: "i"
+          }
+        },
+        "true",
+        "$$REMOVE"
+      ]
+    }
+  }
+}
+
+
+
+
+AddFields: {
+    "isMatchTitle": {
+      $or: [
+          $regexMatch: {
+              input: "$title",
+              regex: /oru/,
+              options: "i"
+          }
+      ]
+    },
+    "isMatchUrl": {
+        $or: [
+            $regexMatch: {
+                input: "$url",
+                regex: /oru/,
+                options: "i"
+            }
+        ]
+    },"isMatchDescription": {
+        $or: [
+            {
+                $regexMatch: {
+                    input: "$description",
+                    regex: /desccccc/,
+                    options: "i"
+                }
+            },
+            {
+                $regexMatch: {
+                    input: "$description",
+                    regex: /oru/,
+                    options: "i"
+                }
+            }
+        ]
+    },"isMatchKeywords": {
+        $or: [
+            {
+                $regexMatch: {
+                    input: {
+                        $reduce:{
+                        "input":"$keywords",
+                        "initialValue":"",
+                        "in":{
+                            $concat:["$$value","-","$$this"]
+                        }
+                        }
+                    },
+                    regex: /oru/,
+                    options: "i"
+                }
+            }
+        ]
+    },
+}
+
+
+
+
+
+
+
+ OK GOOD SCRIPT
+
+
+let all_keywords = ["oru","organisation"]
+
+let all_keywords_matchRegex_preTemp = `(${somef.splitAndJoin(all_keywords.join(" "), {
+    "\\": "\\\\",    "|": "\\|",      "/": "\\/",
+    "-": "\\-",      "_": "\\_",      "$": "\\$",
+    "[": "\\[",      "]": "\\]",      "(": "\\(",
+    ")": "\\)",      "{": "\\{",      "}": "\\}",
+    "?": "\\?",      "*": "\\*",      "+": "\\+",
+    ",": "\\,",      "^": "\\^",      ":": "\\:",
+    "<": "\\<",      ">": "\\>",      "'": "\\'",
+    '"': '\\"',      "#": "\\#",
+}).split(" ").join("|")})`
+let all_keywords_matchRegex = new RegExp(all_keywords_matchRegex_preTemp, "i")
+ 
+let mongo_fetched = await this.Mongo.db(this._usedDataBaseName).collection("links").aggregate([
+    {
+        $match: {
+            $or: [
+                { title: all_keywords_matchRegex } , 
+                { description: all_keywords_matchRegex } , 
+                { keywords: all_keywords_matchRegex } , 
+            ]
+        }
+    },
+    {
+        $addFields: {
+            "isMatchTitle": {
+                $regexMatch: {
+                    input: "$title",
+                    regex: all_keywords_matchRegex,
+                    options: "i"
+                }
+            },
+            "isMatchUrl": {
+                $regexMatch: {
+                    input: "$url",
+                    regex: all_keywords_matchRegex,
+                    options: "i"
+                }
+            },"isMatchDescription": {
+                $regexMatch: {
+                    input: "$description",
+                    regex: all_keywords_matchRegex,
+                    options: "i"
+                }
+            },"isMatchKeywords": {
+                $regexMatch: {
+                    input: {
+                        $reduce:{
+                            "input":"$keywords",
+                            "initialValue":"",
+                            "in": {
+                                $concat:["$$value","-","$$this"]
+                            }
+                        }
+                    },
+                    regex: all_keywords_matchRegex,
+                    options: "i"
+                }
+            },
+        }
+    },
+    {
+        $sort: {
+            isMatchTitle : -1,
+            isMatchUrl : -1,
+            isMatchDescription : -1,
+            isMatchKeywords : -1,
+            //"url": 1,
+            //"title": 1,
+            //"description": 1,
+            //"keywords": 1,
         }
     }
+    {
+        $limit: (10**6)
+    },
+])
 
-    sortByQuery(query, allDBObjects) {
-
-    }
 
 
-}
+
+
+
+
+
+
+
+
+*/

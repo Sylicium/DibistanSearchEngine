@@ -2,7 +2,9 @@
 //const logger = new (require("./logger"))()
 //const somef = require("./someFunctions")
 
+const dibsilon = require('../localModules/dibsilon');
 const somef = require('../localModules/someFunctions');
+let DIBSILON = require("../localModules/dibsilon")
 
 const MongoClient = require('mongodb').MongoClient;
 
@@ -42,6 +44,8 @@ class Database {
         this._usedDataBaseName = undefined
         this._botInstance = undefined
     }
+
+    __get__() { return this }
 
     _setMongoClient(the_mongo) {
         this.Mongo = the_mongo
@@ -145,9 +149,19 @@ class Database {
         }).limit(limitLength).toArray()
     }
 
+
     async getAllLinksByKeywords(keywordList) {
+         
+        let mongo_fetched = (await DIBSILON.getAllLinksByKeywords(this, keywordList)).toArray()
+
+        console.log("mongo_fetched:",mongo_fetched)
+        return mongo_fetched
+    }
+
+    async getAllLinksByKeywords_2(keywordList) {
         let keywordList_regex = keywordList.map(x => { return new RegExp(x) })
         let listOfFindTests = []
+        console.log("keywordList_regex length:",keywordList_regex.length)
         for(let i in keywordList_regex) {
             listOfFindTests.push(...[
                 { "description": { 
@@ -166,10 +180,45 @@ class Database {
             ])
         }
         console.log("listOfFindTests",listOfFindTests)
+        console.log("[LOG-111] START FETCH", new Date())
+        //let mongo_fetched = await this.Mongo.db(this._usedDataBaseName).collection("links").aggregate([
+        //    { $match: { title: /e/i } },
+        //    {
+        //        $sort: { title: -1 }
+        //    },
+        //    {
+        //        $limit: 1000
+        //    },
+        //])
+
+
+        //.mapReduce(
+        //    function () {
+        //        emit((this.site + '/').match(/(?:https?:\/\/)?(?:www\.)?([\w.]+)(?=\/)/)[1], 1)
+        //    },
+        //    function (key, values) {
+        //        return values.length
+        //    }, { out: 'websiteLinksCount' }
+        //)
+
+
+        // console.log("[LOG-111] END FETCH", new Date())
+
+        // console.log("mongo_fetched:",mongo_fetched)
+        // console.log("[LOG-113] START ARRAY", new Date())
+        // let mongo_fetched_array = await mongo_fetched.toArray()
+        // console.log("[LOG-113] END ARRAY", new Date())
+
+        // return mongo_fetched_array
+
+
         return (await this.Mongo.db(this._usedDataBaseName).collection("links").find({
             
             $or: [...listOfFindTests]
-        }).toArray()).sort((a,b) => {
+        }).toArray())
+        
+        
+        /*.sort((a,b) => {
             let A_any_in_title = somef.any(somef.getKeywords(a.title), keywordList_regex)
             let A_any_in_url = somef.any(somef.getKeywords(a.url), keywordList_regex)
             let A_any_in_description = somef.any(somef.getKeywords(a.description), keywordList_regex)
@@ -197,7 +246,7 @@ class Database {
                     }
                 }
             }
-        })
+        })*/
     }
 
     /**
@@ -311,7 +360,6 @@ class Database {
 let Database_ = new Database()
 
 module.exports = Database_
-
 
 
 //logger.debug("Instance_.findAccount: "+Instance_.findAccount("774003919625519134"))
