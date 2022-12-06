@@ -82,6 +82,7 @@ async function getLinksByQuery(query, infos) {
         to: (req.query.fetchFrom != undefined ? (req.query.fetchFrom + 100) : 100),// max number of links. Max 100 liens par requete
     }
     */
+   /*
     if(infos.to != undefined) {
         if(infos.to < 0) { infos.to = 0 }
         else if(infos.to > 100) { infos.to = 100 }
@@ -89,15 +90,21 @@ async function getLinksByQuery(query, infos) {
     infos = {
         from: (infos.from ?? 0),
         to: (infos.from != undefined ? (parseInt(infos.fetchFrom) + (infos.to != undefined ? infos.to : 100)) : 100),// 100 liens max par requete
-    }
+    }*/
 
     console.log("Database:",Database)
     let keywords = query.split(" ").map(x => { return x.trim() })
     
     console.log("[LOG-112] START getLinksByQuery", new Date())
-    let the_all_links = await Database.getAllLinksByKeywords(keywords)
+    let the_all_links_and_count = await Database.getAllLinksByQuery(query, infos)
+    /*
+    the_all_links_and_count = {
+        count: 56,
+        fetched: max 20 documents
+    }
+    */
     console.log("[LOG-112] END getLinksByQuery", new Date())
-    return the_all_links
+    return the_all_links_and_count
 
     return [
         {

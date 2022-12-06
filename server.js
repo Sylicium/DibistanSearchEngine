@@ -97,11 +97,17 @@ module.exports.run = () => {
 
                 let started_processTime = Date.now()
 
-                let the_results = await SE.getLinksByQuery(req.query.query, {
+                let AllLinksAndCountLinks_byQuery = await SE.getLinksByQuery(req.query.query, {
                     from: (req.query.fetchFrom ?? 0),
                     to: (req.query.fetchFrom != undefined ? (req.query.fetchFrom + 100) : 100),// 100 liens max par requete
                 })
                 let processTime = Date.now() - started_processTime
+                /*
+                AllLinksAndCountLinks_byQuery = {
+                    count: nombre total de documents,
+                    fetched: max 20 documents fetch par rapport au req.query.start
+                }
+                */
 
                 /*
                 x = {
@@ -110,12 +116,12 @@ module.exports.run = () => {
                     description: "description"
                 }
                 */
-                the_results = the_results.map(x => {
+                let resultsToDraw = AllLinksAndCountLinks_byQuery.fetched.map(x => {
                     return SE.getHTMLResultChunk(req.query.query, x)
                 })
 
-                if(the_results.length == 0) {
-                    the_results = [SE.getNoResultToQueryChunk()]
+                if(resultsToDraw.length == 0) {
+                    resultsToDraw = [SE.getNoResultToQueryChunk()]
                 }
 
                 let colorTheme = `${ (req.cookies.colorTheme != undefined && req.cookies.colorTheme == "white" ) ? "theme-white" : "theme-dark"}`
@@ -127,11 +133,11 @@ module.exports.run = () => {
                 let file = getQueryFile({
                     query: req.query.query,
                     result: {
-                        count: the_results.length,
+                        count: AllLinksAndCountLinks_byQuery.count,
                         processTime: processTime
                     },
                     colorTheme: colorTheme,
-                    results: the_results.join(""),
+                    results: resultsToDraw.join(""),
                 })
 
                 return res.send(file)

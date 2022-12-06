@@ -149,13 +149,27 @@ class Database {
         }).limit(limitLength).toArray()
     }
 
-
-    async getAllLinksByKeywords(keywordList) {
+    /**
+     * f(): Retourne une liste de 0 à 20 élements des liens trouvés matchant la query
+     * @param {String} query - La string de recherche à effectuer et transformer en mot clés
+     * @param {Object} infos - { from: 0, to: 20 } le range des données à récupérer. (eq <=> quelle page * longeur par page)
+     * @returns "{ count: total document hit by, fetched: max 20 documents }"
+     */
+    async getAllLinksByQuery(query, infos) {
+        /*
+        infos = {
+            from: (req.query.fetchFrom ?? 0), // min number of links
+            to: (req.query.fetchFrom != undefined ? (req.query.fetchFrom + 100) : 100),// max number of links. Max 100 liens par requete
+        }
+        */
          
-        let mongo_fetched = (await DIBSILON.getAllLinksByKeywords(this, keywordList)).toArray()
+        let mongo_fetched = (await DIBSILON.getAllLinksByQuery(this, query, infos))
 
         console.log("mongo_fetched:",mongo_fetched)
-        return mongo_fetched
+        return {
+            count: await DIBSILON.getCountLinksByKeywords(this, query),
+            fetched: mongo_fetched
+        }
     }
 
     async getAllLinksByKeywords_2(keywordList) {

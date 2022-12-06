@@ -1,0 +1,81 @@
+<html>
+<head>
+    <title>Dibim - Beta mode</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta charset="utf-8">
+    <meta property="og:site_name" content="Dibim">
+    <meta property="og:title" content="Dibim">
+    <meta property="og:description" content="Le 1er moteur de recherche 100% dibistanais !
+Tuclikare monior coDonis tuan..">
+    <meta property="og:image" content="/assets/img/logo_d_3">
+    <meta name="theme-color" content="#1A5DF7">
+
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+    <link type="text/css" id="dark-mode" rel="stylesheet" href="/assets/css/index.css">
+    
+
+    <style>
+
+        body {
+            background-color: #36393F;
+            color: white;
+            font-family: consolas;
+        }
+
+    </style>
+    
+</head>
+
+<body>
+
+<div style="display:flex;flex-direction:column;height:100%;width:100%;justify-content:center;align-items:center;">
+    <h1>401 unauthorized</h1>
+    <p>Accès non autorisé: Aucun Token ou Token invalide.<br>Le serveur est encore en mode de test en version beta.</p>
+    <p>Si vous êtes beta testeur, merci d'insérer le Token d'accès ci-dessous:</p>
+    <input id="beta_token" placeholder="Beta Token">
+    <button onclick="setBetaToken()">Confirmer</button>
+    <p id="backMessage"></p>
+</div>
+
+</body>
+
+    
+<script>
+
+function setBetaToken() {
+
+    try {
+        setCookie("beta_token", document.getElementById("beta_token").value, (1000*60*60))
+        document.getElementById("backMessage").textContent = "Le jeton d'accès à été redéfinit, veuillez recharger la page."
+    } catch(e) {
+        console.log(e)
+        document.getElementById("backMessage").textContent = `Une erreur est survenue à la modification du Token, plus d'infos en console: ${e}`
+    }
+}
+
+function setCookie(cname, cvalue, exdays) {
+    if(!exdays) exdays = 1
+    const d = new Date();
+    d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+    let expires = "expires="+d.toUTCString();
+    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+}
+
+function getCookie(cname) {
+    let name = cname + "=";
+    let ca = document.cookie.split(';');
+    for(let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) == ' ') {
+        c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+        return c.substring(name.length, c.length);
+        }
+    }
+    return "";
+}
+    
+</script>
+
+</html>
