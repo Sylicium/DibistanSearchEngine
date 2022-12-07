@@ -133,8 +133,18 @@ Ce bot est également le seul à l'heure actuelle qui permet de lier votre disco
         </div> <!-- result -->
         {{infos.results}}
     </div>
+    <div class="changePageButtonRow">
+
+        <div class="primary-button previousPage" onclick="goTo_previousPage()">Avant</div>
+        <div class="primary-button nextPage" onclick="goTo_nextPage()">Après</div>
+
+    </div>
 
 </div>
+
+<footer class="footer">
+    <p>Site développé par Sylicium</p>
+</footer>
 
 </body>
 
@@ -196,6 +206,23 @@ function switchColorTheme(that) {
     }
 }
 
+function goTo_previousPage() {
+    let params = new URLSearchParams(window.location.search);
+    let pageLength = parseInt("{{pageLength}}");
+    let pageNum = Math.floor((params.get("start") != undefined ? parseInt(params.get("start")) : 0)/20)
+    pageNum--
+    if(pageNum < 0) pageNum = 0
+    params.set("start",pageNum*pageLength)
+    document.location.href = `${document.location.origin}/?${params.toString()}`
+}
+function goTo_nextPage() {
+    let params = new URLSearchParams(window.location.search);
+    let pageLength = parseInt("{{pageLength}}");
+    let pageNum = Math.floor((params.get("start") != undefined ? parseInt(params.get("start")) : 0)/20)
+    pageNum++
+    params.set("start",pageNum*pageLength)
+    document.location.href = `${document.location.origin}/?${params.toString()}`
+}
 
 
 function setCookie(cname, cvalue, exdays) {

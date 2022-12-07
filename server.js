@@ -16,6 +16,7 @@ const io = require('socket.io')(serv);
 
 const somef = require("./localModules/someFunctions")
 const SE = require("./localModules/searchEngine")
+let DIBSILON = require("./localModules/dibsilon")
 
 const Modules_ = {
     "Discord": Discord,
@@ -68,6 +69,7 @@ function getQueryFile(infos) {
         "{{infos.results}}": infos.results,
         "{{infos.colorTheme}}": infos.colorTheme,
         "{{infos.colorTheme_svgPlace}}": (infos.colorTheme == "theme-white" ? SE.Datas.svg.moon : SE.Datas.svg.sun),
+        "{{pageLength}}": DIBSILON.Config.page.length,
     })
     return page
 }
@@ -98,8 +100,7 @@ module.exports.run = () => {
                 let started_processTime = Date.now()
 
                 let AllLinksAndCountLinks_byQuery = await SE.getLinksByQuery(req.query.query, {
-                    from: (req.query.fetchFrom ?? 0),
-                    to: (req.query.fetchFrom != undefined ? (req.query.fetchFrom + 100) : 100),// 100 liens max par requete
+                    start: (req.query.start ?? 0),
                 })
                 let processTime = Date.now() - started_processTime
                 /*

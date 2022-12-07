@@ -1,7 +1,5 @@
 
 
-const { info } = require("console")
-const { devNull } = require("os")
 let somef = require("./someFunctions")
 
 
@@ -12,8 +10,18 @@ class Dibsilon {
             lastVersion: "0.2.0-alpha",
             date: "02/12/2022",
             developer: "Sylicium",
-        }        
+        }
 
+        this._GlobalConfig = {
+            page: {
+                length: 20, // number of links per pages
+            }
+        }
+
+    }
+
+    get Config() {
+        return this._GlobalConfig
     }
 
     sortByQuery(query, allDBObjects) {
@@ -33,6 +41,30 @@ class Dibsilon {
             ",": "\\,", "^": "\\^", ":": "\\:",
             "<": "\\<", ">": "\\>", "'": "\\'",
             '"': '\\"', "#": "\\#",
+
+            "à": "a", "á": "a", "â": "a", "ã": "a", "ä": "a", "å": "a",
+            "a": "[aàáâãäå]",
+
+            "è": "e", "é": "e", "ê": "e", "ë": "e",
+            "e": "[eèéêë]",
+
+            "ì": "i", "í": "i", "î": "i", "ï": "i",
+            "i": "[iìíîï]",
+
+            "ò": "o", "ó": "o", "ô": "o", "õ": "o", "ö": "o", "ø": "o",
+            "o": "[oòóôõöø]",
+            
+            "ù": "u", "ú": "u", "û": "u", "ü": "u",
+            "u": "[uùúûü]",
+
+            "ý": "y", "ÿ": "y",
+            "y": "[yýÿ]",
+
+            "ñ": "n", "n": "[nñ]",
+            "ç": "c", "c": "[cç]",
+            
+            "æ": "ae", "ae": "(ae|æ)",
+            "œ": "oe", "oe": "(oe|œ)",
         }).split(" ").join("|")})`
         let all_keywords_matchRegex = new RegExp(all_keywords_matchRegex_preTemp, "i")
         return all_keywords_matchRegex
@@ -61,13 +93,14 @@ class Dibsilon {
     async getAllLinksByQuery(database, query, infos) {
         let all_keywords_matchRegex = this._getKeywordsMatchRegex_fromQuery(query)
 
+        /*
         infos = {
-            from: (infos.from != undefined ? parseInt(infos.from) : 0),
-            to: (infos.to != undefined ? parseInt(infos.to) : 20),
+            start: (req.query.start ?? 0), // skip first X links.
         }
-
-        let the_skip = parseInt((infos.from ?? 0))
-        let the_limit = parseInt((infos.from != undefined ? `${( (infos.to != undefined && infos.to < 20 && infos.to > 0) ? infos.to : 20)}` : `${( (infos.to != undefined && (infos.to-infos.from) < 20 && (infos.to-infos.from) > 0) ? (infos.from+infos.to) : 20)}`))
+        */
+        
+        let the_skip = (infos.start != undefined ? parseInt(infos.start) : 0)
+        let the_limit = this.Config.page.length
 
         console.log("the_skip",the_skip,"the_limit",the_limit)
 
@@ -115,23 +148,6 @@ class Dibsilon {
                     },
                 }
             },
-            // {
-            //     $match: {
-            //         $or: [
-            //             { isMatchTitle: { $eq: true } }, 
-            //             { isMatchUrl: { $eq: true } }, 
-            //             { isMatchDescription: { $eq: true } }, 
-            //             { isMatchKeywords: { $eq: true } }, 
-            //         ]
-            //     }
-            // },
-            {
-                $project: {
-                    url: 1,
-                    description: { $substrCP: ["$description", 0, 300] },   
-                    title: 1,
-                }
-            },
             {
                 $sort: {
                     isMatchTitle : -1,
@@ -142,6 +158,13 @@ class Dibsilon {
                     //"title": 1,
                     //"description": 1,
                     //"keywords": 1,
+                }
+            },
+            {
+                $project: {
+                    url: 1,
+                    description: { $substrCP: ["$description", 0, 300] },   
+                    title: 1,
                 }
             },
             {

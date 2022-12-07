@@ -1,10 +1,11 @@
 
 * {
-
+    
 }
 body.theme-dark {
     transition: 0.5s all;
     --background-color: #212327; /* white: e9e9e9 */
+    --background-color-2: #2c2f33;
     --color-theme-actual: #212327;
     --color-theme-other: #e9e9e9;
     --grey-300: #a7acb4;
@@ -20,6 +21,7 @@ body.theme-dark {
 body.theme-white {
     transition: 0.5s all;
     --background-color: #e9e9e9; /* white: e9e9e9 */
+    --background-color-2: #c0c0c0;
     --color-theme-actual: #e9e9e9;
     --color-theme-other: #212327;
     --grey-300: #353535;
@@ -39,6 +41,25 @@ body {
     font-family: helvetica, calibri;
 }
 
+
+
+.primary-button {
+    background-color: rgb(11, 115, 250);
+    padding: 7px 15px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: 0.3s all;
+    margin: 2px 5px;
+    color: white;
+}
+.primary-button:hover {
+    transition: 0.3s all;
+    background-color: rgb(12, 94, 202);
+}
+
+.primary-button:active {
+    background-color: rgb(2, 80, 182);
+}
 
 
 .breakTextThreeDots {
@@ -356,4 +377,27 @@ body {
 #searchResultList div.searchResult.noResult div.description svg.logoInfo {
     margin-right: 5px;
     font-size: 2.5vh;
+}
+
+div#allPage div.changePageButtonRow {
+    display: flex;
+    align-items: center;
+    justify-content: left;
+    margin-left: var(--search-margin-page);
+}
+div#allPage div.changePageButtonRow div.button {
+    background-color: var(--btn-primary-color);
+}
+div#allPage div.changePageButtonRow div.button:hover {
+    background-color: var(--btn-primary-color-hover);
+}
+
+
+
+footer.footer {
+    height: 100px;
+    padding: 10px;
+    text-align: center;
+    margin-top: 30px;
+    background-color: var(--background-color-2);
 }

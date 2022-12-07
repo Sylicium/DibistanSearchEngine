@@ -158,8 +158,7 @@ class Database {
     async getAllLinksByQuery(query, infos) {
         /*
         infos = {
-            from: (req.query.fetchFrom ?? 0), // min number of links
-            to: (req.query.fetchFrom != undefined ? (req.query.fetchFrom + 100) : 100),// max number of links. Max 100 liens par requete
+            start: (req.query.start ?? 0), // skip first X links.
         }
         */
          
