@@ -395,6 +395,7 @@ div#allPage div.changePageButtonRow div.button:hover {
 
 
 footer.footer {
+    color: var(--grey-300);
     height: 100px;
     padding: 10px;
     text-align: center;
