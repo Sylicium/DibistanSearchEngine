@@ -8,8 +8,11 @@ body.theme-dark {
     --background-color-2: #2c2f33;
     --color-theme-actual: #212327;
     --color-theme-other: #e9e9e9;
-    --grey-300: #a7acb4;
-    --grey-400: #979ca4;
+    --grey-300: 167, 172, 180;
+    --grey-400: 151, 156, 164;
+    --red-100: 214, 95, 95;
+    --red-200: 183, 34, 34;
+    --blue-100: 89, 119, 255;
     --search-margin-page: 130px;
     --page-link-color: #99BEFF;
     --page-link-extreme-color: whitesmoke;
@@ -24,8 +27,11 @@ body.theme-white {
     --background-color-2: #c0c0c0;
     --color-theme-actual: #e9e9e9;
     --color-theme-other: #212327;
-    --grey-300: #353535;
-    --grey-400: #2e2e2e;
+    --grey-300: 53, 53, 53;
+    --grey-400: 46, 46, 46;
+    --red-100: 214, 95, 95;
+    --red-200: 183, 34, 34;
+    --blue-100: 89, 119, 255;
     --search-margin-page: 130px;
     --page-link-color: #1167ff;
     --page-link-extreme-color: black;
@@ -87,18 +93,26 @@ body {
     flex-direction: row;
     padding: 3px;
     align-items: center;
-    color: var(--grey-300);
+    color: rgba(var(--grey-300));
     cursor: pointer;
     border-bottom: 3px solid transparent;
     margin: 0px 5px 0px 5px;
     transition: 0.2s all;
 }
+#allPage div.mainBar div.searchTypeBar div.type.disabled {
+    color: rgba(var(--red-100));
+}
+#allPage div.mainBar div.searchTypeBar div.type.disabled:hover {
+    color: rgba(var(--red-200));
+    border-bottom: 3px solid rgba(var(--red-100), 0.45);
+}
+
 #allPage div.mainBar div.searchTypeBar div.type.selected {
-    border-bottom: 3px solid #5977ff;
+    border-bottom: 3px solid rgba(var(--blue-100), 1);
     color: var(--page-link-extreme-color);
 }
-#allPage div.mainBar div.searchTypeBar div.type:hover:not(.selected) {
-    border-bottom: 3px solid #5977ff77;
+#allPage div.mainBar div.searchTypeBar div.type:hover:not(.selected,.disabled) {
+    border-bottom: 3px solid  rgba(var(--blue-100), 0.45);
     color: var(--page-link-extreme-color);
     transition: 0.1s all;
 }
@@ -107,9 +121,9 @@ body {
     padding: 3px;
     padding-right: 0px;
 }
-#allPage div.mainBar div.searchTypeBar div.type .logo.disabled path.gray{
-    color: var(--grey-300);
-    fill: var(--grey-300);
+#allPage div.mainBar div.searchTypeBar div.type .logo.color-disabled path.gray{
+    color: rgba(var(--grey-300));
+    fill: rgba(var(--grey-300));
 }
 
 
@@ -132,7 +146,7 @@ body {
     margin-right: 10px;
 }
 #allPage div.mainBar div.searchBar_andSettings div.buttonList div.button {
-    border: 1px solid var(--grey-300);
+    border: 1px solid rgba(var(--grey-300));
     width: fit-content;
     height: fit-content;
     padding: 3px;
@@ -145,7 +159,7 @@ body {
 }
 #allPage div.mainBar div.searchBar_andSettings div.buttonList div.button .logo {
     width: 4vh;
-    fill: var(--grey-300)
+    fill: rgba(var(--grey-300));
 }
 
 #allPage div.mainBar div.searchBar_andSettings div.buttonList div.button.switchColorTheme {
@@ -261,7 +275,7 @@ body {
 }
 #allPage div.infoBar div.resultStats {
     font-size: 1.5vh;
-    color: var(--grey-400);
+    color: rgba(var(--grey-400));
 }
 
 #searchResultList {
@@ -302,7 +316,7 @@ body {
     margin: 2px;
 }
 #searchResultList div.searchResult div.urlPreview {
-    color: var(--grey-300);
+    color: rgba(var(--grey-300));
     font-size: 1.35vh;
     position: relative;
     /*cursor: pointer;*/
@@ -336,7 +350,7 @@ body {
     font-size: 1.5vh;
 }
 #searchResultList div.searchResult div.urlPreview span:not(.domain) {
-    color: var(--grey-300);
+    color: rgba(var(--grey-300));
 }
 
 #searchResultList div.searchResult div.title {
@@ -353,7 +367,7 @@ body {
     text-decoration: underline;
 }
 #searchResultList div.searchResult div.description {
-    color: var(--grey-300);
+    color: rgba(var(--grey-300));
     font-size: 1.8vh;
     margin-left: 3px;
     
@@ -395,7 +409,7 @@ div#allPage div.changePageButtonRow div.button:hover {
 
 
 footer.footer {
-    color: var(--grey-300);
+    color: rgba(var(--grey-300));
     height: 100px;
     padding: 10px;
     text-align: center;
