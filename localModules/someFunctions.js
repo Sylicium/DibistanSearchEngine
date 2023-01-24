@@ -22,6 +22,49 @@ function splitAndJoin(text, dict) {
 
 let _normalize = (str) => { return (`${str}`.normalize('NFKD').replace(/[^\w ]/g, '')).toLowerCase().replace(/\s+/g, ' ').trim() }
 
+let _normalizeRegex = (str) => {
+    return `(${splitAndJoin(_normalize(str.toLowerCase().trim()), {
+        "\\": "\\\\", "|": "\\|", "/": "\\/",
+        "-": "\\-", "_": "\\_", "$": "\\$",
+        "[": "\\[", "]": "\\]", "(": "\\(",
+        ")": "\\)", "{": "\\{", "}": "\\}",
+        "?": "\\?", "*": "\\*", "+": "\\+",
+        ",": "\\,", "^": "\\^", ":": "\\:",
+        "<": "\\<", ">": "\\>", "'": "\\'",
+        '"': '\\"', "#": "\\#",
+
+        "à": "a", "á": "a", "â": "a", "ã": "a", "ä": "a", "å": "a",
+        "a": "[aàáâãäå]",
+
+        "è": "e", "é": "e", "ê": "e", "ë": "e",
+        "e": "[eèéêë]",
+
+        "ì": "i", "í": "i", "î": "i", "ï": "i",
+        "i": "[iìíîï]",
+
+        "ò": "o", "ó": "o", "ô": "o", "õ": "o", "ö": "o", "ø": "o",
+        "o": "[oòóôõöø]",
+        
+        "ù": "u", "ú": "u", "û": "u", "ü": "u",
+        "u": "[uùúûü]",
+
+        "ý": "y", "ÿ": "y",
+        "y": "[yýÿ]",
+
+        "ñ": "n", "n": "[nñ]",
+        "ç": "c", "c": "[cç]",
+        
+        "æ": "ae", "ae": "(ae|æ)",
+        "œ": "oe", "oe": "(oe|œ)",
+    })})`
+}
+
+let _normalizeListRegex = (list) => {
+    return list.map(x => { return _normalizeRegex(x) }).join("|")
+}
+
+
+
 module.exports._normalize = _normalize
 
 module.exports.capitalize = (str) => { return `${str[0].toUpperCase()}${str.slice(1)}` }

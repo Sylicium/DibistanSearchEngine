@@ -45,6 +45,6 @@ server.run()
 //var result = await Database.getAllLinksByKeywords(["bot"])
 var result = (await Database.getAllLinks_notChecked())
 
-console.log("recherche:",result)
+//console.log("recherche:",result)
 
 }

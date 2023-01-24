@@ -197,7 +197,7 @@ let functionlist = {
             `${main_list.join("\n")}`
         ].join("\n")
 
-        fs.appendFileSync(`C:\\Users\\Sylicium\\Documents\\DirtyBiologystan\\Projets\\searchEngine\\DibistanSearchEngine\\writtenDown\\${fileName}`, the_content)
+        fs.appendFileSync(`C:\\Users\\Sylicium\\Documents\\DirtyBiologystan\\Projets\\searchEngine\\DibistanSearchEngine\\fetchNewLinks\\writtenDown\\${fileName}`, the_content)
     },
 }
 
