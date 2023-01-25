@@ -1,7 +1,4 @@
 
-
-let MONGODB_URL = "mongodb+srv://discordbot:B8ewi2d3PaQh6xz4@cluster0.wrmyx.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
-
 /*
 
 Ligne 240
@@ -16,6 +13,11 @@ Donc creer / update le document ? comment savoir en restant optimisé ?
 
 
 */
+
+try {
+    require("dotenv").config()
+} catch(e) { console.log(e) }
+
 
 const Database = require("./databaseParser.js")
 const MongoClient = require('mongodb').MongoClient;
@@ -49,8 +51,8 @@ logger.info("=======================================")
 logger.info("========== [Starting script] ==========")
 logger.info("=======================================")
 
-let url = MONGODB_URL
-
+let url = process.env.MONGODB_URL
+console.log(process.env)
 logger.info("Tentative de connection à MongoDB...")
 MongoClient.connect(url, function(err, Mongo) {
     if(err) throw err

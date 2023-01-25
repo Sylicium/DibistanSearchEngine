@@ -5,7 +5,7 @@
 
 try {
     require("dotenv").config()
-} catch(e) { }
+} catch(e) { console.log(e) }
 
 let MONGODB_URL = process.env.MONGODB_URL
 

@@ -9,7 +9,7 @@ let config = {
 const express = require('express');
 const Discord = require("discord.js");
 const app = express();
-app.use(express.urlencoded())
+app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 const serv = require('http').createServer(app);
 const io = require('socket.io')(serv);
