@@ -144,9 +144,14 @@ class Database {
         return this.Mongo.db(this._usedDataBaseName).collection("links").find({ }).toArray()
     }
     async getAllLinks_notChecked(limitLength=10000) {
-        return this.Mongo.db(this._usedDataBaseName).collection("unfetchedLinks").find().sort({
+        //let l = await this.Mongo.db(this._usedDataBaseName).collection("unfetchedLinks").find({ "url": { $regex: "dirty", $options: "g" } }).sort({
+        let l = await this.Mongo.db(this._usedDataBaseName).collection("unfetchedLinks").find().sort({
             "createdAt": 1
         }).limit(limitLength).toArray()
+        /*l = l.filter(x => {
+            return (x.url.includes("dirtybiol") || x.url.includes("dibistan") || x.url.includes("dibi") )
+        })*/
+        return l
     }
 
     /**

@@ -342,6 +342,16 @@ body {
     color: mediumseagreen;
     /*font-family: cursive;*/
 }
+#searchResultList div.searchResult:not(.googleResult) div.urlPreview span.googleResult {
+    display: none;
+}
+#searchResultList div.searchResult.googleResult div.urlPreview span.googleResult {
+    display: initial;
+    font-weight: bold;
+    padding-right: 8px;
+    color: rgb(206, 94, 50);
+    /*font-family: cursive;*/
+}
 #searchResultList div.searchResult div.urlPreview span {
     margin: 0px 2px;
 }

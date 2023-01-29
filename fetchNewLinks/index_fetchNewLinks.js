@@ -14,6 +14,51 @@ Donc creer / update le document ? comment savoir en restant optimisé ?
 
 */
 
+
+
+function writeUncaughException(e, title) {
+    console.error("[DBG] Uncaught Exception or Rejection", e.stack)
+    console.error(e.stack.split("\n"))
+    //const fs = require('fs')
+
+    let date = (new Date).toLocaleString("fr-FR")
+
+    if (!title) title = "/!\\ UNCAUGH ERROR /!\\"
+
+    let log_text = `${title} ${e.stack.split("\n").join("\n")}\n`
+    /*
+
+    //console.log(`[${date} ERROR] (unknown): /!\\ UNCAUGH ERROR /!\\ ${e.stack}`)
+    if (!fs.existsSync("./logs/mainUncaugh.log")) {
+        fs.writeFileSync("./logs/mainUncaugh.log", `File created on ${date}\n\n`)
+    }
+    let log_text_split = log_text.split("\n")
+    for (let i in log_text_split) {
+        fs.appendFileSync("./logs/mainUncaugh.log", `[${date} ERROR] (unknown): ${log_text_split[i]}\n`, 'utf8');
+    }
+    */
+
+    
+}
+
+
+process
+    .on('unhandledRejection', (reason, p) => {
+        console.log(reason, '[DBG] Unhandled Rejection at Promise', p);
+        writeUncaughException(reason, "Unhandled Rejection (process.on handle)")
+    })
+    .on('uncaughtException', err => {
+        console.log(err, '[DBG] Uncaught Exception thrown BBBBBBBBBB');
+        writeUncaughException(err, "Uncaught Exception (process.on handle)")
+    });
+
+
+
+let debugs = {
+    normal: true,
+    debug1: true,
+}
+
 try {
     require("dotenv").config()
 } catch(e) { console.log(e) }
@@ -52,7 +97,7 @@ logger.info("========== [Starting script] ==========")
 logger.info("=======================================")
 
 let url = process.env.MONGODB_URL
-console.log(process.env)
+
 logger.info("Tentative de connection à MongoDB...")
 MongoClient.connect(url, function(err, Mongo) {
     if(err) throw err
@@ -209,6 +254,22 @@ server.setFunctions(functionlist)
 let newFetchedToPushToDatabase = []
 let successfullyFetchedLinks_toDelete = []
 
+
+async function runOneMoreLoop(chunkLength) {
+    await oneMoreLoop(chunkLength)
+    console.log("Rerunning in 3 ...")
+    setTimeout(() => { console.log("Rerunning in 2 ...") }, 1*1000)
+    setTimeout(() => { console.log("Rerunning in 1 ...") }, 2*1000)
+    setTimeout(() => { console.log("Rerunning in 0 ...") }, 3*1000)
+    setTimeout(() => {
+        runOneMoreLoop(chunkLength)
+    }, 4*1000)
+}
+
+runOneMoreLoop(50)
+
+
+
 async function oneMoreLoop(chunkLength) {
     /*
     total_links
@@ -231,7 +292,15 @@ async function oneMoreLoop(chunkLength) {
     newFetchedToPushToDatabase = []
     successfullyFetchedLinks_toDelete = []
 
-    let DB_no_fetchedLinks = await Database.getAllLinks_notChecked(100)
+    let DB_no_fetchedLinks = await Database.getAllLinks_notChecked(300)
+
+
+    DB_no_fetchedLinks = [
+        { url: "https://dirtybiology.captaincommand.repl.co/" }
+    ]
+    if(main_list.length > 1) DB_no_fetchedLinks = main_list.map(x => { return { url: x }})
+    
+
     console.log("DB_no_fetchedLinks",DB_no_fetchedLinks)
     if(DB_no_fetchedLinks.length != 0) new_to_check = DB_no_fetchedLinks.map(x => { return x.url })
     //new_to_check = new_to_check_list
@@ -240,78 +309,71 @@ async function oneMoreLoop(chunkLength) {
 
     let loop_start_timestamp = Date.now()
     let old_new_to_check_length = new_to_check.length
-    getAllSubLinksOfLinkList_optimised_chunked(new_to_check, chunkLength).then(list => {
-        //server.emitChanges("endLoop", Date.now())
-        let loop_end_timestamp = Date.now()
-        //server.emitChanges("log", "list:",list)
-        new_to_check = removeDuplicate(list.flat(2))
-        main_list = removeDuplicate(main_list.concat(list.flat(2)))
-        //console.log(`One more loop made. +${new_to_check.length} links. Now having ${main_list.length} links`)
-        let new_tocheck_length = new_to_check.length
-        let duration = loop_end_timestamp - loop_start_timestamp/*
-        total_links
-        total_fetching_links
-        total_fetched_links
-        chunks_processing
-        chunks_total
-        linksInChunks_processed
-        linksInChunks_total
+
+
+    let list = await getAllSubLinksOfLinkList_optimised_chunked(new_to_check, chunkLength)
+
+    //server.emitChanges("endLoop", Date.now())
+    let loop_end_timestamp = Date.now()
+    //server.emitChanges("log", "list:",list)
+    new_to_check = removeDuplicate(list.flat(2))
+    main_list = removeDuplicate(main_list.concat(list.flat(2)))
+    //console.log(`One more loop made. +${new_to_check.length} links. Now having ${main_list.length} links`)
+    let new_tocheck_length = new_to_check.length
+    let duration = loop_end_timestamp - loop_start_timestamp/*
+    total_links
+    total_fetching_links
+    total_fetched_links
+    chunks_processing
+    chunks_total
+    linksInChunks_processed
+    linksInChunks_total
+    */
+    let text_to_log = [
+        ``,
+        ``,
+        `+====================+`,
+        `Ended loop`,
+        `+${new_tocheck_length} links`,
+        `Now having ${main_list.length} links`,
+        `Took ${formatTime(duration, "DDDDD jours, hhhmmmsss")} to process`,
+        `EQ ${formatTime(duration/new_tocheck_length, "DDDDD jours, hhhmmmsss.msms")} per link`,
+        `Averadge links per pages ${(new_tocheck_length/old_new_to_check_length).toFixed(3)} links/pages`,
+        `+====================+`,
+        ``,
+        ``,
+    ].join("\n")
+    
+    if(debugs.normal) console.log("ENDED successfullyFetchedLinks_toDelete=",successfullyFetchedLinks_toDelete)
+    Database.unfetchedLinksBecomeFetchedDeleteList(successfullyFetchedLinks_toDelete)
+    if(debugs.normal) console.log("main_list:",main_list)
+    console.log(text_to_log)
+    console.log(`!!! 1 newFetchedToPushToDatabase .length = ${newFetchedToPushToDatabase.length} !!!`)
+    //console.log("newFetchedToPushToDatabase",newFetchedToPushToDatabase)
+    newFetchedToPushToDatabase = newFetchedToPushToDatabase.filter((x, i) => { // remove duplicate urls
+        /*
+        x = {
+            url: "url",
+            fetchedIn: "fetchedFromUrl" //
+        }
         */
-        let text_to_log = [
-            ``,
-            ``,
-            `+====================+`,
-            `Ended loop`,
-            `+${new_tocheck_length} links`,
-            `Now having ${main_list.length} links`,
-            `Took ${formatTime(duration, "DDDDD jours, hhhmmmsss")} to process`,
-            `EQ ${formatTime(duration/new_tocheck_length, "DDDDD jours, hhhmmmsss.msms")} per link`,
-            `Averadge links per pages ${(new_tocheck_length/old_new_to_check_length).toFixed(3)} links/pages`,
-            `+====================+`,
-            ``,
-            ``,
-        ].join("\n")
-        
-
-        console.log("ENDED successfullyFetchedLinks_toDelete=",successfullyFetchedLinks_toDelete)
-        Database.unfetchedLinksBecomeFetchedDeleteList(successfullyFetchedLinks_toDelete)
-
-        console.log("main_list:",main_list)
-        console.log(text_to_log)
-
-        console.log(`!!! 1 newFetchedToPushToDatabase .length = ${newFetchedToPushToDatabase.length} !!!`)
-
-        //console.log("newFetchedToPushToDatabase",newFetchedToPushToDatabase)
-
-        newFetchedToPushToDatabase = newFetchedToPushToDatabase.filter((x, i) => { // remove duplicate urls
-            /*
-            x = {
-                url: "url",
-                fetchedIn: "fetchedFromUrl" //
-            }
-            */
-            let found = newFetchedToPushToDatabase.find(o => { return o.url == x.url })
-            return i === newFetchedToPushToDatabase.indexOf(found)
-        })
-
-        console.log("pushing to database...")
-        if(newFetchedToPushToDatabase.length > 0) Database.insertManyLinks(newFetchedToPushToDatabase)
-        console.log(`!!! newFetchedToPushToDatabase .length = ${newFetchedToPushToDatabase.length} !!!`)
-        console.log("successfully pushed to database...")
-
-
-        //server.emitChanges("log", text_to_log)
-
-        //server.emitChanges("total_links", main_list.length)
-        //server.emitChanges("total_fetching_links", 0)
-        //server.emitChanges("total_fetched_links", 0)
-        //server.emitChanges("chunks_processing", 0)
-        //server.emitChanges("chunks_total", 0)
-        //server.emitChanges("linksInChunks_processed", 0)
-        //server.emitChanges("linksInChunks_total", 0)
-        //server.emitChanges("total_new_links_fetched", 0)
-        
+        let found = newFetchedToPushToDatabase.find(o => { return o.url == x.url })
+        return i === newFetchedToPushToDatabase.indexOf(found)
     })
+    console.log("pushing to database...")
+    if(newFetchedToPushToDatabase.length > 0) Database.insertManyLinks(newFetchedToPushToDatabase)
+    console.log(`!!! newFetchedToPushToDatabase .length (no dupe) = ${newFetchedToPushToDatabase.length} !!!`)
+    console.log("successfully pushed to database...")
+    //server.emitChanges("log", text_to_log)
+    //server.emitChanges("total_links", main_list.length)
+    //server.emitChanges("total_fetching_links", 0)
+    //server.emitChanges("total_fetched_links", 0)
+    //server.emitChanges("chunks_processing", 0)
+    //server.emitChanges("chunks_total", 0)
+    //server.emitChanges("linksInChunks_processed", 0)
+    //server.emitChanges("linksInChunks_total", 0)
+    //server.emitChanges("total_new_links_fetched", 0)
+        
 }
 
 async function getAllSubLinksOfLinkList_optimised_chunked(list, chunkLength) {
@@ -321,9 +383,9 @@ async function getAllSubLinksOfLinkList_optimised_chunked(list, chunkLength) {
     let long = chunks.length
     for(let i in chunks) {
         //server.emitChanges("chunks_processing", parseInt(i)+1)
-        console.log(`[${`${parseInt(i)+1}/${long}`}] Getting chunk of ${chunks[i].length} elements.`)
+        if(debugs.normal) console.log(`[${`${parseInt(i)+1}/${long}`}] Getting chunk of ${chunks[i].length} elements.`)
         let chunk_processed = ( await getAllSubLinksOfLinkList_optimised(chunks[i]) ).flat(2)
-        console.log(`[${`${parseInt(i)+1}/${long}`}] ENDED Getting chunk of ${chunks[i].length} elements. Done.`)
+        if(debugs.normal) console.log(`[${`${parseInt(i)+1}/${long}`}] ENDED Getting chunk of ${chunks[i].length} elements. Done.`)
         chunk_processed = removeDuplicate(chunk_processed, main_list)
         all_list.push(chunk_processed)
 
@@ -339,7 +401,7 @@ async function getAllSubLinksOfLinkList_optimised(list) {
     let count_fetchedURLs = 0
     server.emitChanges("linksInChunks_total", long)
     for(let i in list) {
-        console.log(`${`[${parseInt(i)+1}/${long}]`.padEnd(13," ")} Fetching links of ${list[i]}`)
+        if(debugs.normal) console.log(`${`[${parseInt(i)+1}/${long}]`.padEnd(13," ")} Fetching links of ${list[i]}`)
         let all_l = getAllLinksInPage_v2(list[i], [
             "dibistan",
             "dirtybiologistan.fandom.com",
@@ -347,12 +409,14 @@ async function getAllSubLinksOfLinkList_optimised(list) {
             "dirtybiologistan",
             "micronation",
             "crisardie",
+            "crisardi",
             "drapeau",
             "constitution",
+            "abyssale",
         ])
         all_l.then((newFetchedUrlList) => {
             count_fetchedURLs++
-            console.log(`${`[${count_fetchedURLs}/${long}]`.padEnd(13," ")} Succesfully fetched ${newFetchedUrlList.length} links of ${list[i]}`)
+            if(debugs.normal) console.log(`${`[${count_fetchedURLs}/${long}]`.padEnd(13," ")} Succesfully fetched ${newFetchedUrlList.length} links of ${list[i]}`)
 
             newFetchedToPushToDatabase.push(...(newFetchedUrlList.map(x => {
                 return {
@@ -417,9 +481,19 @@ async function getAllLinksInPage_v2(url, mustContainWordsInPage=[]) {
         if(keywords == null) keywords = []
         //console.log("successfullyFetchedLinks_toDelete ++")
         //console.log("successfullyFetchedLinks_toDelete=",successfullyFetchedLinks_toDelete)
-        
-        if(res.data.length < 10000 || page_title == "") {
-            
+
+        if(debugs.debug1) console.log("Res.data.length =",res.data.length)
+
+        Database.markLinkAsFetched({
+            url: url,
+            title: page_title, // document.title
+            description: the_description, // first <p> ou suite de texte
+            keywords: keywords,
+        })
+
+
+        /*if(res.data.length < 1000 || page_title == "") {
+            console.log("markLinkAsFetched NOT FETCHED")
         } else {
             Database.markLinkAsFetched({
                 url: url,
@@ -427,7 +501,7 @@ async function getAllLinksInPage_v2(url, mustContainWordsInPage=[]) {
                 description: the_description, // first <p> ou suite de texte
                 keywords: keywords,
             })
-        }
+        }*/
 
 
         /******************************************/
@@ -476,7 +550,7 @@ function canSpeedUpGettingPageContent(url) {
             "https://ton.local.twitter.com",
             "https://youtube.com",
             "https://www.youtube.com",
-            "https://onepiece.fandom.com/de/wiki/",
+            "https://onepiece.fandom.com/",
         ]
     }
 

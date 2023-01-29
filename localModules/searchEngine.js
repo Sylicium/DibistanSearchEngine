@@ -2,7 +2,7 @@
 
 let somef = require("./someFunctions")
 let Database = require("../fetchNewLinks/databaseParser")
-
+const googlethis = require("googlethis")
 
 module.exports.SearchEngineManager = class {
     constructor() {
@@ -93,6 +93,31 @@ async function getLinksByQuery(query, infos) {
         fetched: max 20 documents
     }
     */
+    console.log("the_all_links_and_count 1:",the_all_links_and_count)
+    if(the_all_links_and_count.count == 0) {
+        let gg_search_options = {
+            page: 0, 
+            safe: false, // Safe Search
+            parse_ads: false, // If set to true sponsored results will be parsed
+            additional_params: { 
+                // add additional parameters here, see https://moz.com/blog/the-ultimate-guide-to-the-google-search-parameters and https://www.seoquake.com/blog/google-search-param/
+                hl: 'fr' 
+            }
+        }
+        let gg_search = (await googlethis.search(query, gg_search_options)).results
+        console.log("gg_search",gg_search)
+        the_all_links_and_count.count = gg_search.length
+        the_all_links_and_count.fetched = gg_search.map(x => {
+            return {
+                url: x.url,
+                title: x.title,
+                description: x.description,
+                advertisement: x.is_sponsored,
+                googleResult: true,
+            }
+        })
+    }
+    console.log("the_all_links_and_count 2:",the_all_links_and_count)
     console.log("[LOG-112] END getLinksByQuery", new Date())
     return the_all_links_and_count
 
@@ -150,13 +175,25 @@ async function getLinksByQuery(query, infos) {
 
 module.exports.getHTMLResultChunk = getHTMLResultChunk
 function getHTMLResultChunk(query, urlDBObject) {
-    //console.log("urlDBObject",urlDBObject)
-    return `<div class="searchResult">
+    console.log("urlDBObject",urlDBObject.url)
+    let urlToSpanObject;
+    try {
+        urlToSpanObject = urlToSpan(decodeURI(urlDBObject.url))
+    } catch(err) {
+        urlToSpanObject = urlToSpan(decodeURI(`${urlDBObject.url}`.split("?")[0]))
+    }
+    
+    let the_list = []
+    if(urlDBObject.advertisement) the_list.push("advertisement")
+    if(urlDBObject.verified) the_list.push("verified")
+    if(urlDBObject.googleResult) the_list.push("googleResult")
+    return `<div class="searchResult${the_list.length > 0 ? " "+the_list.join(" ") : ""}">
         <div class="urlPreview">
         <img class="urlFavicon" src="${getFaviconUrl(urlDBObject.url)}">
-        ${urlDBObject.advertisement ? "<span class='advertisement'>Annonce</span>" : ""}
-        ${urlDBObject.verified ? "<span class='verified'>Vérifié</span>" : ""}
-        ${urlToSpan(decodeURI(urlDBObject.url))}
+        ${urlDBObject.advertisement ? "<span class='advertisement' title='Ce résultat est une annonce ou autre type de sponsorisation.'>Annonce</span>" : ""}
+        ${urlDBObject.verified ? "<span class='verified' title='Ce résultat a été vérifié par Dibim'>Vérifié</span>" : ""}
+        ${urlDBObject.googleResult ? "<span class='googleResult' title='Ce résultat est issu de Google, et non de Dibim.'>Résultat Google</span>" : ""}
+        ${urlToSpanObject}
         </div>
         <div class="title">
         <a href="${urlDBObject.url}" onclick="clickedOnLink(this)">${urlDBObject.title}</a>
