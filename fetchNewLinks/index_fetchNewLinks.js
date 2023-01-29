@@ -296,7 +296,12 @@ async function oneMoreLoop(chunkLength) {
 
 
     DB_no_fetchedLinks = [
-        { url: "https://dirtybiology.captaincommand.repl.co/" }
+        { url: "https://dirtybiology.captaincommand.repl.co/" },
+        { url: "https://dirtybiologistan.fandom.com/fr/wiki/Acad%C3%A9mie_dibiste" },
+        { url: "https://dirtybiologistan.fandom.com/fr/wiki/En:Acad%C3%A9mie_dibiste" },
+        { url: "https://dirtybiologistan.fandom.com/fr/wiki/Db:Acad%C3%A9mie_dibiste" },
+        { url: "https://dibi-dictionary.herokuapp.com/"},
+        { url: "https://dibi-dictionary.onrender.com/" }
     ]
     if(main_list.length > 1) DB_no_fetchedLinks = main_list.map(x => { return { url: x }})
     
