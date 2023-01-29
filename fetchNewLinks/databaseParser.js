@@ -167,6 +167,7 @@ class Database {
         }
         */
          
+        console.log("Mongo fetching...")
         let mongo_fetched = (await DIBSILON.getAllLinksByQuery(this, query, infos))
 
         console.log("mongo_fetched:",mongo_fetched)

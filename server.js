@@ -82,74 +82,84 @@ module.exports.run = () => {
     
     app.all("*", async (req, res) => { // tout à la fin sinon le "*" catch à la place des autres app.get()
 
-        console.log(`[Web] ${req.method.toUpperCase()} -> ${req.url}`)
-        console.log(req.query)
+        try {
 
-        if(req.path == "/favicon.ico") return res.sendFile(`${__dirname}${servEndpoints.site.relative}/favicon.ico`)
-        if(req.path.startsWith("/api/")) return;
-        if(req.path.startsWith("/assets/")) return;
-
-        if(req.path == "/") {
-
-            if(!req.query.query) {
-                return res.sendFile(`${__dirname}${servEndpoints.site.relative}/index.html`)
+            console.log(`[Web] ${req.method.toUpperCase()} -> ${req.url}`)
+            console.log(req.query)
+    
+            if(req.path == "/favicon.ico") return res.sendFile(`${__dirname}${servEndpoints.site.relative}/favicon.ico`)
+            if(req.path.startsWith("/api/")) return;
+            if(req.path.startsWith("/assets/")) return;
+    
+            if(req.path == "/") {
+    
+                if(!req.query.query) {
+                    return res.sendFile(`${__dirname}${servEndpoints.site.relative}/index.html`)
+                } else {
+    
+                    req.query.query = req.query.query.trim()
+    
+                    let started_processTime = Date.now()
+    
+                    let AllLinksAndCountLinks_byQuery = await SE.getLinksByQuery(req.query.query, {
+                        start: (req.query.start ?? 0),
+                    })
+                    let processTime = Date.now() - started_processTime
+                    /*
+                    AllLinksAndCountLinks_byQuery = {
+                        count: nombre total de documents,
+                        fetched: max 20 documents fetch par rapport au req.query.start
+                    }
+                    */
+    
+                    /*
+                    x = {
+                        url: "page url",
+                        title: "titre",
+                        description: "description"
+                    }
+                    */
+                    let resultsToDraw = AllLinksAndCountLinks_byQuery.fetched.map(x => {
+                        return SE.getHTMLResultChunk(req.query.query, x)
+                    })
+    
+                    if(resultsToDraw.length == 0) {
+                        resultsToDraw = [SE.getNoResultToQueryChunk()]
+                    }
+    
+                    let colorTheme = `${ (req.cookies.colorTheme != undefined && req.cookies.colorTheme == "white" ) ? "theme-white" : "theme-dark"}`
+                    if(req.query.forceTheme != undefined) {
+                        if(req.query.forceTheme == "dark") { colorTheme = "theme-dark" }
+                        else if(req.query.forceTheme == "white") { colorTheme = "theme-white" }
+                    }
+    
+                    let file = getQueryFile({
+                        query: req.query.query,
+                        result: {
+                            count: AllLinksAndCountLinks_byQuery.count,
+                            processTime: processTime
+                        },
+                        colorTheme: colorTheme,
+                        results: resultsToDraw.join(""),
+                    })
+    
+                    return res.send(file)
+                }
+    
+            } else if(req.path.endsWith("/") && fs.existsSync(`.${servEndpoints.site.fs}${req.path}/index.html`)) {
+                return res.sendFile(`${__dirname}${servEndpoints.site.relative}${req.path}/index.html`)
+            } else if(fs.existsSync(`.${servEndpoints.site.fs}${req.path}.html`)) {
+                return res.sendFile(`${__dirname}${servEndpoints.site.relative}${req.path}.html`)
             } else {
-
-                req.query.query = req.query.query.trim()
-
-                let started_processTime = Date.now()
-
-                let AllLinksAndCountLinks_byQuery = await SE.getLinksByQuery(req.query.query, {
-                    start: (req.query.start ?? 0),
-                })
-                let processTime = Date.now() - started_processTime
-                /*
-                AllLinksAndCountLinks_byQuery = {
-                    count: nombre total de documents,
-                    fetched: max 20 documents fetch par rapport au req.query.start
-                }
-                */
-
-                /*
-                x = {
-                    url: "page url",
-                    title: "titre",
-                    description: "description"
-                }
-                */
-                let resultsToDraw = AllLinksAndCountLinks_byQuery.fetched.map(x => {
-                    return SE.getHTMLResultChunk(req.query.query, x)
-                })
-
-                if(resultsToDraw.length == 0) {
-                    resultsToDraw = [SE.getNoResultToQueryChunk()]
-                }
-
-                let colorTheme = `${ (req.cookies.colorTheme != undefined && req.cookies.colorTheme == "white" ) ? "theme-white" : "theme-dark"}`
-                if(req.query.forceTheme != undefined) {
-                    if(req.query.forceTheme == "dark") { colorTheme = "theme-dark" }
-                    else if(req.query.forceTheme == "white") { colorTheme = "theme-white" }
-                }
-
-                let file = getQueryFile({
-                    query: req.query.query,
-                    result: {
-                        count: AllLinksAndCountLinks_byQuery.count,
-                        processTime: processTime
-                    },
-                    colorTheme: colorTheme,
-                    results: resultsToDraw.join(""),
-                })
-
-                return res.send(file)
+                return res.sendFile(`${__dirname}${servEndpoints.site.relative}/404.html`)
             }
 
-        } else if(req.path.endsWith("/") && fs.existsSync(`.${servEndpoints.site.fs}${req.path}/index.html`)) {
-            return res.sendFile(`${__dirname}${servEndpoints.site.relative}${req.path}/index.html`)
-        } else if(fs.existsSync(`.${servEndpoints.site.fs}${req.path}.html`)) {
-            return res.sendFile(`${__dirname}${servEndpoints.site.relative}${req.path}.html`)
-        } else {
-            return res.sendFile(`${__dirname}${servEndpoints.site.relative}/404.html`)
+        } catch(err) {
+            res.status(500)
+            res.send(JSON.stringify({
+                message: `An error occured server-side. ${err}`,
+                stack: err.stack.split("\n"),
+            }))
         }
 
     })
