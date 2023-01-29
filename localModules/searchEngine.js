@@ -175,7 +175,7 @@ async function getLinksByQuery(query, infos) {
 
 module.exports.getHTMLResultChunk = getHTMLResultChunk
 function getHTMLResultChunk(query, urlDBObject) {
-    console.log("urlDBObject",urlDBObject.url)
+    //console.log("urlDBObject",urlDBObject.url)
     let urlToSpanObject;
     try {
         urlToSpanObject = urlToSpan(decodeURI(urlDBObject.url))
