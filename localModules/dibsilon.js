@@ -73,6 +73,8 @@ class Dibsilon {
 
     async getCountLinksByKeywords(database, query) {
         let all_keywords_matchRegex = this._getKeywordsMatchRegex_fromQuery(query)
+        let startTime = Date.now()
+        console.log("[DIBSILON] getCountLinksByKeywords : start",startTime)
         let back = await database.Mongo.db(database._usedDataBaseName).collection("links").countDocuments({
             $or: [
                 { title: all_keywords_matchRegex },
@@ -80,7 +82,9 @@ class Dibsilon {
                 { keywords: all_keywords_matchRegex },
             ]
         })
-        console.log("back",back)
+        let endTime = Date.now()
+        console.log("[DIBSILON] getCountLinksByKeywords : end",endTime,"in ",endTime-startTime)
+        console.log(`[DIBSILON] getCountLinksByKeywords : back`,back)
         return back
     }
 
@@ -104,7 +108,7 @@ class Dibsilon {
 
         console.log("the_skip",the_skip,"the_limit",the_limit)
 
-        return await database.Mongo.db(database._usedDataBaseName).collection("links").aggregate([
+        let databaseCursor = await database.Mongo.db(database._usedDataBaseName).collection("links").aggregate([
             {
                 $match: {
                     $or: [
@@ -163,8 +167,8 @@ class Dibsilon {
             {
                 $project: {
                     url: 1,
-                    description: { $substrCP: ["$description", 0, 300] },   
-                    title: 1,
+                    description: { $substrCP: ["$description", 0, 30] },   
+                    title: { $substrCP: ["$title", 0, 80] },    // ou title: 1,
                 }
             },
             {
@@ -173,7 +177,22 @@ class Dibsilon {
             {
                 $limit: the_limit
             },
-        ]).toArray()
+        ])
+        console.log("[DIBSILON] Got Database cursor.")
+        let databaseCursor2 = databaseCursor
+        let the_list = []
+        /*await databaseCursor.stream().on("data", doc => {
+            console.log("new doc !")
+            the_list.push(doc)
+        })
+        while (await databaseCursor.hasNext()) {
+            console.log("new doc !")
+            the_list.push(await databaseCursor.next())
+        }*/
+        
+        console.log("[DIBSILON] Got Database cursor, converting it to array...")
+        //return the_list
+        return databaseCursor.toArray()
     }
 
 
