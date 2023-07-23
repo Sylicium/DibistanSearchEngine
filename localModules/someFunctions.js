@@ -21,6 +21,8 @@ function splitAndJoin(text, dict) {
 }
 
 let _normalize = (str) => { return (`${str}`.normalize('NFKD').replace(/[^\w ]/g, '')).toLowerCase().replace(/\s+/g, ' ').trim() }
+module.exports._normalize = _normalize
+module.exports.capitalize = (str) => { return `${str[0].toUpperCase()}${str.slice(1)}` }
 
 let _normalizeRegex = (str) => {
     return `(${splitAndJoin(_normalize(str.toLowerCase().trim()), {
@@ -62,12 +64,6 @@ let _normalizeRegex = (str) => {
 let _normalizeListRegex = (list) => {
     return list.map(x => { return _normalizeRegex(x) }).join("|")
 }
-
-
-
-module.exports._normalize = _normalize
-
-module.exports.capitalize = (str) => { return `${str[0].toUpperCase()}${str.slice(1)}` }
 
 module.exports.formatTime = formatTime
 function formatTime(millisecondes, format) {
