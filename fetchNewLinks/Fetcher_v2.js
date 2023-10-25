@@ -1,7 +1,7 @@
 
 /**
  * @author Sylicium
- * @version 3.2.3
+ * @version 3.2.4
  * @date 25/10/2023
  */
 
@@ -92,7 +92,7 @@ class new_fetcher {
 
     _getAxiosOptions() { return this._axiosRequestOptions }
     _getDomainFromURI(uri) {
-        console.log(`${this._getLogPrefix()}[DEBUG] _getDomainFromURI: ${uri}`)
+        console.log(`${this._getLogPrefix("DEBUG")} _getDomainFromURI: ${uri}`)
         return uri.match(/https?:\/\/([^/]+)/)[1];
     }
     _getDatabaseInsertionChunkSize() { return this._databaseInsertionChunkSize }
