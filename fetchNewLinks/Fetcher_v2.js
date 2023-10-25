@@ -37,7 +37,7 @@ class new_fetcher {
         this._maxFetchedIDSBufferSize = maxSimultaneousFetch*3
         this._continueProcessBufferLimit = 2000 // Recommended: 2 * maxSimultaneousFetch | Minimum amount to not fetch again links
         this._continueProcessFetchChunkSize = 500 // Recommended: maxSimultaneousFetch / 2 | If continueProcessBuffer is under its limit, fetching that chunck size of links
-        this._databaseInsertionChunkSize = 1000
+        this._databaseInsertionChunkSize = 10
 
         this._startedTimestamp = 0;
         this._running = false
@@ -61,6 +61,7 @@ class new_fetcher {
     }
 
     async _useFetchTimeWindow() {
+        if(_minimumTimeBetweenFetches == 0) return;
         while(Date.now() - this._lastFetchRequest < this._minimumTimeBetweenFetches) { await somef.sleep(1) }
         this._lastFetchRequest = Date.now()
     }
