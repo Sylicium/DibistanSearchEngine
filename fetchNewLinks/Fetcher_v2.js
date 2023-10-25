@@ -36,6 +36,7 @@ class new_fetcher {
         this._maxFetchedIDSBufferSize = maxSimultaneousFetch*3
         this._continueProcessBufferLimit = 50 // Minimum amount to not fetch again links
         this._continueProcessFetchChunkSize = 50 // If continueProcessBuffer is under its limit, fetching that chunck size of links
+        this._databaseInsertionChunkSize = 1000
 
         this._startedTimestamp = 0;
         this._running = false
@@ -84,6 +85,7 @@ class new_fetcher {
         console.log(`${this._getLogPrefix()}[DEBUG] _getDomainFromURI: ${uri}`)
         return uri.match(/https?:\/\/([^/]+)\//)[1];
     }
+    _getDatabaseInsertionChunkSize() { return this._databaseInsertionChunkSize }
 
     _getDefaultTitle() { return this._defaultTitle }
     _getContinueProcessBufferLimit() { return this._continueProcessBufferLimit }
@@ -254,12 +256,8 @@ class new_fetcher {
         
         this._statsAddScrappedLink(filteredLinks.length)
 
-        //console.log("new_links:",new_links)
-        //console.log("filteredLinks:",filteredLinks)
 
-        if(filteredLinks.length > 0) {
-            /* id, title, uri, createdAt, lastFetch, fetchCount` */
-
+        function insertLinksIntoDatabase(links) {
             // La requête SQL d'insertion de base
             let sqlQuery = `INSERT INTO 
                 links (title, uri, createdAt, lastFetch, fetchCount)
@@ -269,8 +267,8 @@ class new_fetcher {
             const valuesToInsert = [];
             
             // Boucle pour construire la requête et les valeurs
-            for (let i in filteredLinks) {
-                const link = filteredLinks[i];
+            for (let i in links) {
+                const link = links[i];
                 const createdAt = Date.now();
 
                 if (i > 0) { sqlQuery += ',' }
@@ -283,6 +281,21 @@ class new_fetcher {
             sqlQuery += ';';
             
             this.Database._makeQuery(sqlQuery, valuesToInsert)
+        }
+
+
+
+        //console.log("new_links:",new_links)
+        //console.log("filteredLinks:",filteredLinks)
+
+        if(filteredLinks.length > 0) {
+            /* id, title, uri, createdAt, lastFetch, fetchCount` */
+            let chunks = filteredLinks.chunk(this._getDatabaseInsertionChunkSize())
+            for(let i in chunks) {
+                let links_chunk = chunks[i]
+                insertLinksIntoDatabase(links_chunk)
+            }
+            
         }
         this._continueProcess()
     }
