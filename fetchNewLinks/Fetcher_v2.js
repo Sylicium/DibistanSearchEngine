@@ -61,6 +61,7 @@ class new_fetcher {
     }
 
     _getAxiosOptions() { return this._axiosRequestOptions }
+    _getDomainFromURI(uri) { return uri.match(/https?:\/\/([^/]+)\//)[1]; }
 
     _getDefaultTitle() { return this._defaultTitle }
     _getContinueProcessBufferLimit() { return this._continueProcessBufferLimit }
@@ -75,7 +76,7 @@ class new_fetcher {
 
     async _getRobotTxTFromURI(uri) {
         try {
-            let domain = uri.match(/https?:\/\/([^/]+)\//)[1];
+            let domain = this._getDomainFromURI(uri)
             if(this._temp.robotTXT.hasOwnProperty(domain)) { return this._temp.robotTXT[domain] };
             let robot_uri = `https://${domain}/robots.txt`
             console.log(`[Fetcher] RobotTXT: axios getting ${robot_uri}`)
@@ -145,7 +146,7 @@ class new_fetcher {
         let robotsTxtContent = await this._getRobotTxTFromURI(uri)
         if (!robotsTxtContent) return links;
 
-        const robots = robotsParser(`${siteUrl}/robots.txt`, robotsTxtContent);
+        const robots = robotsParser(`${this._getDomainFromURI(uri)}/robots.txt`, robotsTxtContent);
         let filteredLinks = [];
 
         for (const link of links) {
@@ -161,7 +162,7 @@ class new_fetcher {
 
 
     async _onFetched(axiosResponse) {
-        if(this.isKilled()) return;
+        if(this._isKilled()) return;
 
         let new_links = this._extractLinks(axiosResponse.data)
         let filteredLinks = await this._filterLinksByRobotTXT(new_links, axiosResponse.config.url)
