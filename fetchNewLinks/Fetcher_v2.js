@@ -316,7 +316,7 @@ class new_fetcher {
 
     _insertLinksIntoDatabase(links) {
         // La requête SQL d'insertion de base
-        let sqlQuery = `INSERT INTO 
+        let sqlQuery = `INSERT IGNORE INTO 
             links (title, uri, createdAt, lastFetch, fetchCount)
         VALUES`;
         

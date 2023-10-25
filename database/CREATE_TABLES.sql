@@ -4,12 +4,13 @@
 CREATE TABLE `links` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `title` varchar(100) DEFAULT NULL,
-  `url` varchar(512) NOT NULL,
+  `uri` varchar(512) NOT NULL,
   `createdAt` bigint(20) unsigned NOT NULL,
   `lastFetch` bigint(20) unsigned NOT NULL,
   `fetchCount` int(10) unsigned NOT NULL DEFAULT 1,
-  PRIMARY KEY (`id`)
-);
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uri` (`uri`)
+)
 
 -- dibim.keywords definition
 
