@@ -373,7 +373,7 @@ class new_fetcher {
 
         for(let i=0;i < this._getFreeFetchersAmount(); i++) {
             if(this._canUseFetcher()) {
-                this._startFetchURI(this._getFirstWaitingLinkInBuffer())
+                this._startFetchURI(await this._getFirstWaitingLinkInBuffer())
             } else {
                 this._retryStartFetchURI()
             }
@@ -384,14 +384,14 @@ class new_fetcher {
     async _retryStartFetchURI() {
         await somef.sleep(500)
         if(this._canUseFetcher()) {
-            this._startFetchURI(this._getFirstWaitingLinkInBuffer())
+            this._startFetchURI(await this._getFirstWaitingLinkInBuffer())
         } else {
             await somef.sleep(500)
             if(this._canUseFetcher()) {
-                this._startFetchURI(this._getFirstWaitingLinkInBuffer())
+                this._startFetchURI(await this._getFirstWaitingLinkInBuffer())
             } else {
                 await somef.sleep(2000)
-                if(this._canUseFetcher()) { this._startFetchURI(this._getFirstWaitingLinkInBuffer()) }
+                if(this._canUseFetcher()) { this._startFetchURI(await this._getFirstWaitingLinkInBuffer()) }
             }
         }
     }
