@@ -8,7 +8,7 @@ const _Database_ = require("../localModules/Database")
 const robotsParser = require('robots-parser');
 
 let config = {
-    maxSimultaneousFetch: 100,
+    maxSimultaneousFetch: 10,
     maxWaitAmount: 30*1000,
 }
 
@@ -40,8 +40,8 @@ class new_fetcher {
             buffer: [],
             robotTXT: {},
             fetchersRunning: 0,
-            fetchedIDSBuffer: [],
-            waitingToFetch: []
+            fetchedIDSBuffer: [], // The ones currently fetched, or fetched recently. Prevents multiple Fetchers to fetch same links
+            waitingToFetch: [] // links waiting to be fetched. Filtered by fetchedIDSBuffer
         }
     }
 
@@ -100,16 +100,19 @@ class new_fetcher {
         this._temp.fetchedIDSBuffer.push(id)
         if(this._temp.fetchedIDSBuffer.length >= this._maxFetchedIDSBufferSize) this._temp.fetchedIDSBuffer.shift()
     }
+    FetchingIDSBuffer() {
+        return this._temp.fetchedIDSBuffer
+    }
+
+
+
     _canUseFetcher() {
         if(this._temp.fetchersRunning > this._getMaxFetchAmount()) return false
         return true
     }
     _useFetcher() { this._temp.fetchersRunning += 1 }
 
-    _getFetchingIDSBuffer() {
-        return this._temp.fetchedIDSBuffer
-    }
-
+    _get
     async _extractTitle(html_text) {
         const regex = /<title>(.*?)<\/title>/g;
         const match = regex.exec(html_text);
@@ -146,7 +149,7 @@ class new_fetcher {
         let robotsTxtContent = await this._getRobotTxTFromURI(uri)
         if (!robotsTxtContent) return links;
 
-        const robots = robotsParser(`${this._getDomainFromURI(uri)}/robots.txt`, robotsTxtContent);
+        const robots = robotsParser(`https://${this._getDomainFromURI(uri)}/robots.txt`, robotsTxtContent);
         let filteredLinks = [];
 
         for (let i in links) {
@@ -168,30 +171,35 @@ class new_fetcher {
         let new_links = this._extractLinks(axiosResponse.data)
         let filteredLinks = await this._filterLinksByRobotTXT(new_links, axiosResponse.config.url)
 
-        /* id, title, uri, createdAt, lastFetch, fetchCount` */
+        console.log("new_links:",new_links)
+        console.log("filteredLinks:",filteredLinks)
 
-        // La requête SQL d'insertion de base
-        let sqlQuery = `INSERT INTO 
-            links (title, uri, createdAt, lastFetch, fetchCount)
-        VALUES`;
-        
-        // Les valeurs à insérer dans la base de données
-        const valuesToInsert = [];
-        
-        // Boucle pour construire la requête et les valeurs
-        for (let i in filteredLinks) {
-            const link = filteredLinks[i];
-            const createdAt = Date.now();
+        if(filteredLinks.length > 0) {
+            /* id, title, uri, createdAt, lastFetch, fetchCount` */
 
-            if (i > 0) { sqlQuery += ',' }
+            // La requête SQL d'insertion de base
+            let sqlQuery = `INSERT INTO 
+                links (title, uri, createdAt, lastFetch, fetchCount)
+            VALUES`;
             
-            sqlQuery += ' (?, ?, ?, 0, 0)';
-            valuesToInsert.push(this._getDefaultTitle(), link, createdAt);
+            // Les valeurs à insérer dans la base de données
+            const valuesToInsert = [];
+            
+            // Boucle pour construire la requête et les valeurs
+            for (let i in filteredLinks) {
+                const link = filteredLinks[i];
+                const createdAt = Date.now();
+
+                if (i > 0) { sqlQuery += ',' }
+                
+                sqlQuery += ' (?, ?, ?, 0, 0)';
+                valuesToInsert.push(this._getDefaultTitle(), link, createdAt);
+            }
+            // Compléter la requête
+            sqlQuery += ';';
+            
+            this.Database._makeQuery(sqlQuery, valuesToInsert)
         }
-        // Compléter la requête
-        sqlQuery += ';';
-        
-        this.Database._makeQuery(sqlQuery, valuesToInsert)
 
         this._continueProcess()
     }
@@ -201,15 +209,15 @@ class new_fetcher {
 
         
         axios.get(datas.uri, this._getAxiosOptions()).then((response) => {
+            console.log("[Fetcher] Success")
             
             let titleContent = this._extractTitle()
 
             this.Database._makeQuery(`UPDATE links
             SET
-                lastFetch=?
-                fetchCount=?
-                title=?
-                `, [
+                lastFetch=?,
+                fetchCount=?,
+                title=?`, [
                     Date.now(),
                     datas.fetchCount + 1,
                     titleContent
@@ -219,11 +227,11 @@ class new_fetcher {
             this._onFetched(response)
             
         }).catch(e => {
+            console.log("[Fetcher] Error",e)
             this.Database._makeQuery(`UPDATE links
             SET
-                lastFetch=?
-                fetchCount=?
-                `, [
+                lastFetch=?,
+                fetchCount=?;`, [
                     Date.now(),
                     datas.fetchCount + 1
                 ])
@@ -237,8 +245,7 @@ class new_fetcher {
 
         let links = await this.Database._makeQuery(`SELECT * FROM links
             ORDER BY (links.lastFetch + links.createdAt  + 1000 * links.fetchCount)
-            LIMIT ?
-            `, [
+            LIMIT ?`, [
                 this._getMaxFetchAmount()
             ]
         )
@@ -252,7 +259,8 @@ class new_fetcher {
 
 
     async _continueProcess() {
-        if(this._temp.waitingToFetch.length < this._getContinueProcessLimit()) {
+        console.log(`[Fetcher] Continuing..`)
+        if(this._temp.waitingToFetch.length < this._getContinueProcessBufferLimit()) {
             let links = await this.Database._makeQuery(`SELECT * FROM links
                 ORDER BY (links.lastFetch + links.createdAt  + 1000 * links.fetchCount)
                 LIMIT ?
