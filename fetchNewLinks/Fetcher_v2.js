@@ -1,7 +1,7 @@
 
 /**
  * @author Sylicium
- * @version 2.5.1
+ * @version 2.6.0
  * @date 25/10/2023
  */
 
@@ -315,7 +315,6 @@ class new_fetcher {
             this._onFetched(response)
             
         }).catch(e => {
-            this._releaseFetcher()
             console.log(`${this._getLogPrefix()} Error: ${e}`)
             this.Database._makeQuery(`UPDATE links
             SET
@@ -325,7 +324,12 @@ class new_fetcher {
                     Date.now(),
                     datas.fetchCount + 1,
                     datas.id,
-                ])
+                ]
+            )
+            setTimeout(() => {
+                this._releaseFetcher()
+                this._continueProcess()
+            }, 5000)
         })
     }
 
