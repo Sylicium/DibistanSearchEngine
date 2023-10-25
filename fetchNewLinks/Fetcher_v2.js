@@ -149,7 +149,8 @@ class new_fetcher {
         const robots = robotsParser(`${this._getDomainFromURI(uri)}/robots.txt`, robotsTxtContent);
         let filteredLinks = [];
 
-        for (const link of links) {
+        for (let i in links) {
+            let link = links[i]
             const parsedLink = url.parse(link);
             if (robots.isAllowed(parsedLink.pathname, this._UserAgent)) {
                 // Le lien est autorisé
