@@ -381,7 +381,6 @@ class new_fetcher {
         
         axios.get(datas.uri, this._getAxiosOptions()).then((response) => {
             this._releaseFetcher()
-            this._statsAddFetchedLink(1)
             console.log(`${this._getLogPrefix()} Success for ID=${datas.id}`)
             
             let titleContent = this._extractTitle(response.data)
@@ -398,6 +397,7 @@ class new_fetcher {
                     datas.id,
                 ]
             )
+            this._statsAddFetchedLink(1)
             
             this._onFetched(response)
             
