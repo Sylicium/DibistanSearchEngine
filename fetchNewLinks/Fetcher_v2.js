@@ -1,4 +1,10 @@
 
+/**
+ * @author Sylicium
+ * @version 2.1.0
+ * @date 25/10/2023
+ */
+
 
 const fs = require("fs")
 const axios = require("axios")
@@ -31,6 +37,7 @@ class new_fetcher {
         this._continueProcessBufferLimit = 50 // Minimum amount to not fetch again links
         this._continueProcessFetchChunkSize = 50 // If continueProcessBuffer is under its limit, fetching that chunck size of links
 
+        this._startedTimestamp = 0;
         this._running = false
         this._paused = false
         this._killProcess = false
@@ -40,13 +47,18 @@ class new_fetcher {
             robotTXT: {},
             fetchersRunning: 0,
             fetchedIDSBuffer: [], // The ones currently fetched, or fetched recently. Prevents multiple Fetchers to fetch same links
-            waitingToFetch: [], // links waiting to be fetched. Filtered by fetchedIDSBuffer
+            waitingToFetch: [] // links waiting to be fetched. Filtered by fetchedIDSBuffer
         }
 
         this._stats = {
-            fetchedAmount: 0,
-            newLinksFound: 0 // Contains duplicates and already fetched links in database
+            fetchedLinks: 0,
+            newScrappedLink:0
         }
+    }
+
+    _getLogPrefix(type="info") {
+        let time = somef.formatTime(Date.now() - this._startedTimestamp, `hh:mm:ss.ms`)
+        return `[Fetcher][${time}][${this._stats.fetchedLinks} fetch | ${this._stats.newScrappedLink} scrap][${type.toUpperCase().padEnd(5," ")}]`
     }
 
     __init__() {
@@ -60,7 +72,7 @@ class new_fetcher {
 
     _getAxiosOptions() { return this._axiosRequestOptions }
     _getDomainFromURI(uri) {
-        console.log(`[Fetcher][DEBUG] _getDomainFromURI: ${uri}`)
+        console.log(`${this._getLogPrefix()}[DEBUG] _getDomainFromURI: ${uri}`)
         return uri.match(/https?:\/\/([^/]+)\//)[1];
     }
 
@@ -80,7 +92,7 @@ class new_fetcher {
             let domain = this._getDomainFromURI(uri)
             if(this._temp.robotTXT.hasOwnProperty(domain)) { return this._temp.robotTXT[domain] };
             let robot_uri = `https://${domain}/robots.txt`
-            console.log(`[Fetcher] RobotTXT: axios getting ${robot_uri}`)
+            console.log(`${this._getLogPrefix()} RobotTXT: axios getting ${robot_uri}`)
             let robot_response = await axios.get(robot_uri, this._getAxiosOptions());
             this._temp.robotTXT[domain] = robot_response.data;
             return robot_response.data;
@@ -119,7 +131,7 @@ class new_fetcher {
     _useFetcher() { this._temp.fetchersRunning += 1 }
     _releaseFetcher() {
         if(this._getFetchersRunningAmount() <= 0) {
-            console.log(`[Fetcher][WARN] Invalid release command, ${this._getFetchersRunningAmount()} fetchers currently running. Cannot release one more. Ignoring.`)
+            console.log(`${this._getLogPrefix()}[WARN] Invalid release command, ${this._getFetchersRunningAmount()} fetchers currently running. Cannot release one more. Ignoring.`)
             this._temp.fetchersRunning = 0
         } else {
             this._temp.fetchersRunning = this._temp.fetchersRunning - 1
@@ -131,28 +143,28 @@ class new_fetcher {
         const match = regex.exec(html_text);
         let titleContent = this._getDefaultTitle()
         if (match) {
-          titleContent = match[1];
+        titleContent = match[1];
         }
         return titleContent.length > 1 ? titleContent : this._getDefaultTitle()
     }
 
     _extractLinks(html_text) {
         try {
-      
-          // Utiliser une regex pour extraire les liens
-          const linkRegex = /<a\s+(?:[^>]*?\s+)?href="([^"]*)"/g;
-          const links = [];
-          let match;
+    
+        // Utiliser une regex pour extraire les liens
+        const linkRegex = /<a\s+(?:[^>]*?\s+)?href="([^"]*)"/g;
+        const links = [];
+        let match;
 
-          while ((match = linkRegex.exec(html_text)) !== null) {
+        while ((match = linkRegex.exec(html_text)) !== null) {
             const link = match[1];
             links.push(link);
-          }
-      
-          return links;
+        }
+    
+        return links;
         } catch (error) {
-          console.error('Une erreur s\'est produite :', error);
-          return null;
+            console.error(`${this._getLogPrefix()} Une erreur s\'est produite :`, error);
+            return null;
         }
     }
 
@@ -186,15 +198,20 @@ class new_fetcher {
         }
         return new_links
     }
+    _filterTooLongLinks(links) {
+        return links.filter(x => {
+            return x.length <= 512
+        })
+    }
 
 
-    _rebuildRelativePath(fromURI, links) {
+    _rebuildRelativePath(domain, links) {
         let new_links = []
         for(let i in links) {
             let link = links[i]
             if(link.startsWith("http")) { new_links.push(link) }
             else if(link.startsWith("/")) {
-                new_links.push(`https://${this._getDomainFromURI(fromURI)}${link}`)
+                new_links.push(`https://${domain}${link}`)
             }
         }
         return new_links
@@ -205,7 +222,8 @@ class new_fetcher {
 
         let new_links = this._extractLinks(axiosResponse.data)
         let temp_filter = this._filterWrongLinks(new_links)
-        let temp_filter2 = this._rebuildRelativePath(axiosResponse.config.url, temp_filter)
+        let temp_filter2 = this._filterTooLongLinks(temp_filter)
+        let temp_filter3 = this._rebuildRelativePath(this._getDomainFromURI(axiosResponse.config.url), temp_filter2)
         let filteredLinks = temp_filter2 // await this._filterLinksByRobotTXT(new_links, axiosResponse.config.url)
 
         //console.log("new_links:",new_links)
@@ -234,10 +252,7 @@ class new_fetcher {
             }
             // Compléter la requête
             //console.log("valuesToInsert:",valuesToInsert)
-            sqlQuery += `;
-            WHERE NOT EXISTS (SELECT * FROM links WHERE url=?)
-            `;
-            valuesToInsert.push(axiosResponse.config.url)
+            sqlQuery += ';';
             
             this.Database._makeQuery(sqlQuery, valuesToInsert)
         }
@@ -246,12 +261,12 @@ class new_fetcher {
 
     _startFetchURI(datas) {
         this._useFetcher()
-        console.log(`[Fetcher] Start fetch of ID=${datas.id} (${datas.uri.substr(0,100)}${datas.length > 100 ? "..." : ""}) `)
+        console.log(`${this._getLogPrefix()} Start fetch of ID=${datas.id} (${datas.uri.substr(0,100)}${datas.length > 100 ? "..." : ""}) `)
 
         
         axios.get(datas.uri, this._getAxiosOptions()).then((response) => {
             this._releaseFetcher()
-            console.log(`[Fetcher] Success for ID=${datas.id}`)
+            console.log(`${this._getLogPrefix()} Success for ID=${datas.id}`)
             
             let titleContent = this._extractTitle(response.data)
 
@@ -272,7 +287,7 @@ class new_fetcher {
             
         }).catch(e => {
             this._releaseFetcher()
-            console.log(`[Fetcher] Error: ${e}`)
+            console.log(`${this._getLogPrefix()} Error: ${e}`)
             this.Database._makeQuery(`UPDATE links
             SET
                 lastFetch=?,
@@ -287,6 +302,7 @@ class new_fetcher {
 
     async startProcess() {
         if(this._isRunning()) throw new Error("Fetcher already running.")
+        this._startedTimestamp = Date.now()
         this._running = true
         this._paused = false
 
@@ -297,6 +313,10 @@ class new_fetcher {
             ]
         )
 
+        if(links.length == 0) {
+            throw new Error("Not links to fetch from database.")
+        }
+
         for(let i in links) {
             let link = links[i]
             this._addFetchingID(link.id)
@@ -306,9 +326,9 @@ class new_fetcher {
 
 
     async _continueProcess() {
-        console.log(`[Fetcher] Continuing.. (${this._temp.fetchersRunning} / ${this._getMaxFetchAmount()} fetchers online)`)
+        console.log(`${this._getLogPrefix()} Continuing.. (${this._temp.fetchersRunning} / ${this._getMaxFetchAmount()} fetchers online)`)
         if(this._temp.waitingToFetch.length < this._getContinueProcessBufferLimit()) {
-            console.log(`[Fetcher]   Fetching more links to wait..`)
+            console.log(`${this._getLogPrefix()}   Fetching more links to wait..`)
             let links = await this.Database._makeQuery(`SELECT * FROM links
                 ORDER BY (links.lastFetch + links.createdAt  + 1000 * links.fetchCount)
                 LIMIT ?
