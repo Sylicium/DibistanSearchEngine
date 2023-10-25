@@ -88,9 +88,11 @@ class new_fetcher {
     _getDefaultTitle() { return this._defaultTitle }
     _getContinueProcessBufferLimit() { return this._continueProcessBufferLimit }
     _getContinueProcessFetchChunkSize() { return this._continueProcessFetchChunkSize }
-    _getFirstWaitingLinkInBuffer() {
+    async _getFirstWaitingLinkInBuffer() {
         if(this._temp.waitingToFetch.length == 0) {
-            throw Error(`[Fetcher][ERROR] Fatal error: Waiting links to fetch buffer is empty !`)
+            console.log(`${this._getLogPrefix("ERROR")} Fatal error: Waiting links to fetch buffer is empty ! (Even after 1s wait)`)
+            await somef.sleep(1000)
+            if(this._temp.waitingToFetch.length == 0) throw Error(`${this._getLogPrefix("ERROR")} Fatal error: Waiting links to fetch buffer is empty ! (Even after 1s wait)`)
         }
         let link = this._temp.waitingToFetch.shift()
         return link
@@ -140,7 +142,7 @@ class new_fetcher {
     _useFetcher() { this._temp.fetchersRunning += 1 }
     _releaseFetcher() {
         if(this._getFetchersRunningAmount() <= 0) {
-            console.log(`${this._getLogPrefix()}[WARN] Invalid release command, ${this._getFetchersRunningAmount()} fetchers currently running. Cannot release one more. Ignoring.`)
+            console.log(`${this._getLogPrefix("WARN")} Invalid release command, ${this._getFetchersRunningAmount()} fetchers currently running. Cannot release one more. Ignoring.`)
             this._temp.fetchersRunning = 0
         } else {
             this._temp.fetchersRunning = this._temp.fetchersRunning - 1
@@ -381,11 +383,17 @@ class new_fetcher {
 
     async _retryStartFetchURI() {
         await somef.sleep(500)
-        if(this._canUseFetcher()) { this._startFetchURI(this._getFirstWaitingLinkInBuffer()) }
-        await somef.sleep(500)
-        if(this._canUseFetcher()) { this._startFetchURI(this._getFirstWaitingLinkInBuffer()) }
-        await somef.sleep(2000)
-        if(this._canUseFetcher()) { this._startFetchURI(this._getFirstWaitingLinkInBuffer()) }
+        if(this._canUseFetcher()) {
+            this._startFetchURI(this._getFirstWaitingLinkInBuffer())
+        } else {
+            await somef.sleep(500)
+            if(this._canUseFetcher()) {
+                this._startFetchURI(this._getFirstWaitingLinkInBuffer())
+            } else {
+                await somef.sleep(2000)
+                if(this._canUseFetcher()) { this._startFetchURI(this._getFirstWaitingLinkInBuffer()) }
+            }
+        }
     }
 
     pauseProcess() {
