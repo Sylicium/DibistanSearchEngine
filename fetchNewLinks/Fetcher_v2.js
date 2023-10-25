@@ -26,7 +26,7 @@ class new_fetcher {
         this._maxSimultaneousFetch = maxSimultaneousFetch
         this._socket = new somef.Emitter()
 
-        this._minimumTimeBetweenFetches = 1000 // millisecond
+        this._minimumTimeBetweenFetches = 5 // millisecond
         this._UserAgent = `DibsilonCrawler/0.1.0 (https://search.sylicium.fr/ for more infos)`
         this._defaultTitle = "No title"
         this._axiosRequestOptions = {
@@ -50,7 +50,8 @@ class new_fetcher {
             fetchersRunning: 0,
             fetchedIDSBuffer: [], // The ones currently fetched, or fetched recently. Prevents multiple Fetchers to fetch same links
             waitingToFetch: [], // links waiting to be fetched. Filtered by fetchedIDSBuffer
-            isFetchingMoreLinksToWait: false
+            isFetchingMoreLinksToWait: false,
+            fetchedTimestamps: []
         }
 
         this._stats = {
@@ -60,13 +61,13 @@ class new_fetcher {
     }
 
     async _useFetchTimeWindow() {
-        while(Date.now() - this._lastFetchRequest < this._minimumTimeBetweenFetches) { await somef.sleep(10) }
+        while(Date.now() - this._lastFetchRequest < this._minimumTimeBetweenFetches) { await somef.sleep(1) }
         this._lastFetchRequest = Date.now()
     }
 
     _getLogPrefix(type="info") {
         let time = somef.formatTime(Date.now() - this._startedTimestamp, `hh:mm:ss.ms`)
-        return `[${this._temp.fetchersRunning} / ${this._getMaxFetchAmount()} fetchers online][${time}][${`${this._stats.fetchedLinks}`.padStart(9, " ")} fetch | ${`${this._stats.newScrappedLink}`.padStart(12, " ")} added | ${`${this._temp.waitingToFetch.length}`.padStart(3, " ")} waiting][${type.toUpperCase().padEnd(5," ")}]`
+        return `[${this._getFetchedAverageAmount()}f/s][${this._temp.fetchersRunning} / ${this._getMaxFetchAmount()} fetchers online][${time}][${`${this._stats.fetchedLinks}`.padStart(9, " ")} fetch | ${`${this._stats.newScrappedLink}`.padStart(12, " ")} added | ${`${this._temp.waitingToFetch.length}`.padStart(3, " ")} waiting][${type.toUpperCase().padEnd(5," ")}]`
     }
     _statsAddFetchedLink(amount=1) {
         if(typeof amount != 'number') { throw new Error("Invalid data type. Expected Number")}
@@ -153,6 +154,19 @@ class new_fetcher {
         return this._temp.fetchedIDSBuffer
     }
 
+    _refreshFetchedTimestampsStat() {
+        let d_now = Date.now()
+        let temp = this._temp.fetchedTimestamps.filter(x => {
+            return d_now - x < 10000
+        })
+        this._temp.fetchedTimestamps = temp
+        return temp
+    }
+    _getFetchedAverageAmount() {
+        let temp = this._refreshFetchedTimestampsStat()
+        return temp.length / 10
+    }
+
 
 
     _getFetchersRunningAmount() { return this._temp.fetchersRunning }
@@ -166,6 +180,7 @@ class new_fetcher {
     }
     _useFetcher() { this._temp.fetchersRunning += 1 }
     _releaseFetcher() {
+        this._temp.fetchedTimestamps.push(Date.now())
         if(this._getFetchersRunningAmount() <= 0) {
             console.log(`${this._getLogPrefix("WARN")} Invalid release command, ${this._getFetchersRunningAmount()} fetchers currently running. Cannot release one more. Ignoring.`)
             this._temp.fetchersRunning = 0
@@ -380,9 +395,9 @@ class new_fetcher {
         this._continueProcess()
     }
 
-    _startFetchURI(datas) {
+    async _startFetchURI(datas) {
         this._useFetcher()
-        this._useFetchTimeWindow()
+        await this._useFetchTimeWindow()
         console.log(`${this._getLogPrefix()} Start fetch of ID=${datas.id} (${datas.uri.substr(0,100)}${datas.length > 100 ? "..." : ""}) `)
 
         
