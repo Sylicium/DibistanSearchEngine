@@ -1,7 +1,7 @@
 
 /**
  * @author Sylicium
- * @version 2.4.0
+ * @version 2.5.0
  * @date 25/10/2023
  */
 
@@ -213,6 +213,7 @@ class new_fetcher {
         let new_links = []
         for(let i in links) {
             let link = links[i]
+            if(link.length < 10) continue;
             if(link.startsWith("http")) { new_links.push(link) }
             else if(link.startsWith("/")) { new_links.push(link) }
         }
@@ -231,6 +232,8 @@ class new_fetcher {
             let link = links[i]
             if(link.startsWith("http")) { new_links.push(link) }
             else if(link.startsWith("/")) {
+                if(link.startsWith("//")) link = link.substr(1,link.length)
+                if(link.startsWith("//")) link = link.substr(1,link.length)
                 new_links.push(`https://${domain}${link}`)
             }
         }
