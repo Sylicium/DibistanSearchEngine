@@ -1,7 +1,7 @@
 
 /**
  * @author Sylicium
- * @version 2.1.0
+ * @version 2.3.0
  * @date 25/10/2023
  */
 
@@ -58,7 +58,7 @@ class new_fetcher {
 
     _getLogPrefix(type="info") {
         let time = somef.formatTime(Date.now() - this._startedTimestamp, `hh:mm:ss.ms`)
-        return `[Fetcher][${time}][${this._stats.fetchedLinks} fetch | ${this._stats.newScrappedLink} scrap][${type.toUpperCase().padEnd(5," ")}]`
+        return `[Fetcher][${time}][${`${this._stats.fetchedLinks}`.padStart(7, " ")} fetch | ${`${this._stats.newScrappedLink}`.padStart(6, " ")} added | ${`${this._temp.waitingToFetch.length}`.padStart(3, " ")} waiting][${type.toUpperCase().padEnd(5," ")}]`
     }
 
     __init__() {
@@ -224,7 +224,7 @@ class new_fetcher {
         let temp_filter = this._filterWrongLinks(new_links)
         let temp_filter2 = this._filterTooLongLinks(temp_filter)
         let temp_filter3 = this._rebuildRelativePath(this._getDomainFromURI(axiosResponse.config.url), temp_filter2)
-        let filteredLinks = temp_filter2 // await this._filterLinksByRobotTXT(new_links, axiosResponse.config.url)
+        let filteredLinks = temp_filter3 // await this._filterLinksByRobotTXT(new_links, axiosResponse.config.url)
 
         //console.log("new_links:",new_links)
         //console.log("filteredLinks:",filteredLinks)
@@ -336,6 +336,7 @@ class new_fetcher {
                     this._getContinueProcessFetchChunkSize()
                 ]
             )
+            console.log(`${this._getLogPrefix()}   Fetched ${links.length} more links to wait..`)
             this._temp.waitingToFetch.push(...links)
         }
 
