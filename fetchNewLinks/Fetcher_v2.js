@@ -1,7 +1,7 @@
 
 /**
  * @author Sylicium
- * @version 2.7.0
+ * @version 3.0.0
  * @date 25/10/2023
  */
 
@@ -13,7 +13,7 @@ const _Database_ = require("../localModules/Database")
 const robotsParser = require('robots-parser');
 
 let config = {
-    maxSimultaneousFetch: 10,
+    maxSimultaneousFetch: 1000,
     maxWaitAmount: 30*1000,
 }
 
@@ -34,8 +34,8 @@ class new_fetcher {
             }
         }
         this._maxFetchedIDSBufferSize = maxSimultaneousFetch*3
-        this._continueProcessBufferLimit = 50 // Minimum amount to not fetch again links
-        this._continueProcessFetchChunkSize = 50 // If continueProcessBuffer is under its limit, fetching that chunck size of links
+        this._continueProcessBufferLimit = 2000 // Recommended: 2 * maxSimultaneousFetch | Minimum amount to not fetch again links
+        this._continueProcessFetchChunkSize = 500 // Recommended: maxSimultaneousFetch / 2 | If continueProcessBuffer is under its limit, fetching that chunck size of links
         this._databaseInsertionChunkSize = 1000
 
         this._startedTimestamp = 0;
@@ -60,7 +60,7 @@ class new_fetcher {
 
     _getLogPrefix(type="info") {
         let time = somef.formatTime(Date.now() - this._startedTimestamp, `hh:mm:ss.ms`)
-        return `[Fetcher][${time}][${`${this._stats.fetchedLinks}`.padStart(9, " ")} fetch | ${`${this._stats.newScrappedLink}`.padStart(12, " ")} added | ${`${this._temp.waitingToFetch.length}`.padStart(3, " ")} waiting][${type.toUpperCase().padEnd(5," ")}]`
+        return `[${this._temp.fetchersRunning} / ${this._getMaxFetchAmount()} fetchers online][${time}][${`${this._stats.fetchedLinks}`.padStart(9, " ")} fetch | ${`${this._stats.newScrappedLink}`.padStart(12, " ")} added | ${`${this._temp.waitingToFetch.length}`.padStart(3, " ")} waiting][${type.toUpperCase().padEnd(5," ")}]`
     }
     _statsAddFetchedLink(amount=1) {
         if(typeof amount != 'number') { throw new Error("Invalid data type. Expected Number")}
@@ -192,7 +192,61 @@ class new_fetcher {
         }
     }
 
-    
+
+    _isContentDibistanRelative(html_text) {
+        let keyword_list = [
+            "dibistan", "dirtybiologistan", "dirtibiologistan", "dirtybiologystan",
+            " le dibi", "langue dibi",
+            " oru ", " l'oru ",
+            " la rpd ", ""
+        ]
+
+        for(let i in keyword_list) {
+            let keyword = keyword_list[i]
+            let regex =  new RegExp(`${keyword}`, "gm")
+            if(html_text.match(regex)) return true
+        }
+        return false
+    }
+/*
+    async function _test() {
+        const cheerio = require('cheerio'); // Pour l'analyse HTML
+        const natural = require('natural'); // Pour la tokenisation et le calcul de la fréquence
+        const tokenizer = new natural.WordTokenizer(); // Créer un tokenizer
+
+        const htmlContent = (await axios.get("https://dibistan.fandom.com/fr/wiki/Dibistan")).data
+
+        const $ = cheerio.load(htmlContent); // Charger le contenu HTML
+
+        // Extraire le texte du HTML
+        const text = $('body').text();
+
+        // Tokenisation du texte
+        const tokens = tokenizer.tokenize(text);
+
+        // Filtrer les mots vides (stop words) si nécessaire
+        const stopWords = ['is', 'a', 'for', 'the', 'it']; // Exemple de mots vides
+        const filteredTokens = tokens.filter(token => !stopWords.includes(token.toLowerCase()));
+
+        // Calcul de la fréquence des mots
+        const wordFreq = {};
+        filteredTokens.forEach(token => {
+        if (wordFreq[token]) {
+            wordFreq[token]++;
+        } else {
+            wordFreq[token] = 1;
+        }
+        });
+
+        // Tri des mots clés par fréquence
+        const sortedKeywords = Object.entries(wordFreq)
+        .sort((a, b) => b[1] - a[1])
+        .map(([word, frequency]) => ({ word, frequency }));
+
+        console.log('Mots clés pondérés :');
+        console.log(sortedKeywords);
+    }
+    */
 
     async _filterLinksByRobotTXT(links, uri) {
         let robotsTxtContent = await this._getRobotTxTFromURI(uri)
@@ -244,59 +298,61 @@ class new_fetcher {
         return new_links
     }
 
+    _insertLinksIntoDatabase(links) {
+        // La requête SQL d'insertion de base
+        let sqlQuery = `INSERT INTO 
+            links (title, uri, createdAt, lastFetch, fetchCount)
+        VALUES`;
+        
+        // Les valeurs à insérer dans la base de données
+        const valuesToInsert = [];
+        
+        // Boucle pour construire la requête et les valeurs
+        for (let i in links) {
+            const link = links[i];
+            const createdAt = Date.now();
+
+            if (i > 0) { sqlQuery += ',' }
+            
+            sqlQuery += ' (?, ?, ?, 0, 0)';
+            valuesToInsert.push(this._getDefaultTitle(), link, createdAt);
+        }
+        // Compléter la requête
+        //console.log("valuesToInsert:",valuesToInsert)
+        sqlQuery += ';';
+        
+        this.Database._makeQuery(sqlQuery, valuesToInsert)
+    }
+
     async _onFetched(axiosResponse) {
         if(this._isKilled()) return;
 
-        let new_links = this._extractLinks(axiosResponse.data)
-        let temp_filter = this._filterWrongLinks(new_links)
-        let temp_filter2 = this._filterTooLongLinks(temp_filter)
-        let temp_filter3 = this._rebuildRelativePath(this._getDomainFromURI(axiosResponse.config.url), temp_filter2)
-        let filteredLinks = temp_filter3 // await this._filterLinksByRobotTXT(new_links, axiosResponse.config.url)
+        if(this._isContentDibistanRelative(axiosResponse.data)) {
 
-        
-        this._statsAddScrappedLink(filteredLinks.length)
-
-
-        function insertLinksIntoDatabase(links) {
-            // La requête SQL d'insertion de base
-            let sqlQuery = `INSERT INTO 
-                links (title, uri, createdAt, lastFetch, fetchCount)
-            VALUES`;
+            let new_links = this._extractLinks(axiosResponse.data)
+            let temp_filter = this._filterWrongLinks(new_links)
+            let temp_filter2 = this._filterTooLongLinks(temp_filter)
+            let temp_filter3 = this._rebuildRelativePath(this._getDomainFromURI(axiosResponse.config.url), temp_filter2)
+            let filteredLinks = temp_filter3 // await this._filterLinksByRobotTXT(new_links, axiosResponse.config.url)
+    
             
-            // Les valeurs à insérer dans la base de données
-            const valuesToInsert = [];
-            
-            // Boucle pour construire la requête et les valeurs
-            for (let i in links) {
-                const link = links[i];
-                const createdAt = Date.now();
-
-                if (i > 0) { sqlQuery += ',' }
-                
-                sqlQuery += ' (?, ?, ?, 0, 0)';
-                valuesToInsert.push(this._getDefaultTitle(), link, createdAt);
+            this._statsAddScrappedLink(filteredLinks.length)
+    
+            //console.log("new_links:",new_links)
+            //console.log("filteredLinks:",filteredLinks)
+    
+            if(filteredLinks.length > 0) {
+                /* id, title, uri, createdAt, lastFetch, fetchCount` */
+                let chunks = filteredLinks.chunk(this._getDatabaseInsertionChunkSize())
+                for(let i in chunks) {
+                    let links_chunk = chunks[i]
+                    this._insertLinksIntoDatabase(links_chunk)
+                }
+    
             }
-            // Compléter la requête
-            //console.log("valuesToInsert:",valuesToInsert)
-            sqlQuery += ';';
             
-            this.Database._makeQuery(sqlQuery, valuesToInsert)
         }
 
-
-
-        //console.log("new_links:",new_links)
-        //console.log("filteredLinks:",filteredLinks)
-
-        if(filteredLinks.length > 0) {
-            /* id, title, uri, createdAt, lastFetch, fetchCount` */
-            let chunks = filteredLinks.chunk(this._getDatabaseInsertionChunkSize())
-            for(let i in chunks) {
-                let links_chunk = chunks[i]
-                insertLinksIntoDatabase(links_chunk)
-            }
-
-        }
         this._continueProcess()
     }
 
@@ -320,7 +376,7 @@ class new_fetcher {
             WHERE id=?`, [
                     Date.now(),
                     datas.fetchCount + 1,
-                    titleContent,
+                    titleContent.substr(0,100),
                     datas.id,
                 ]
             )
