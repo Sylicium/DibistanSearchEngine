@@ -1,6 +1,4 @@
 
-
-console.log("1")
 const fs = require("fs")
 const axios = require("axios")
 const somef = require("../localModules/someFunctions")
@@ -56,9 +54,10 @@ class new_fetcher {
         this._running = true
         this._paused = false
 
+        console.log("ddf:",this.getMaxFetchAmount())
+
         let links = await this.Database._makeQuery(`SELECT * FROM links
-            WHERE
-            ORDER BY (links.lastFetch + links.createdAt  + 1000 * links.fetchCount)
+            ORDER BY (links.lastFetch+links.createdAt+1000*links.fetchCount)
             LIMIT ?
             `, [
                 this.getMaxFetchAmount()

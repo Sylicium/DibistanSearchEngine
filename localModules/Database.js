@@ -31,6 +31,7 @@ class Database {
     }
 
     async _makeQuery(query, params) {
+        await this.__waitForInit__()
         let conn;
         let queryResponse = undefined
         // logger.debug("this._Pool:",this._Pool)
@@ -55,10 +56,10 @@ class Database {
                 host: 'localhost', 
                 user:'root',
                 password: 'root',
-                database: 'sentinel',
+                database: 'dibim',
                 connectionLimit: 100
             })
-            this._Pool = pool
+            this._Pool = await pool
             this._initialized = true
     
             this.socket.emit('ready', (
@@ -99,4 +100,5 @@ Database_.__init__()
 Database_.socket.on("ready", (status, error) => {
     if(error) throw error
     if(!status) return console.log("ready status not ok.")
+    console.log("Database loaded.")
 })
