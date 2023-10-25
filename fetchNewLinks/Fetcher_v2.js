@@ -1,7 +1,7 @@
 
 /**
  * @author Sylicium
- * @version 3.0.0
+ * @version 3.1.0
  * @date 25/10/2023
  */
 
@@ -83,34 +83,35 @@ class new_fetcher {
     _getAxiosOptions() { return this._axiosRequestOptions }
     _getDomainFromURI(uri) {
         console.log(`${this._getLogPrefix()}[DEBUG] _getDomainFromURI: ${uri}`)
-        return uri.match(/https?:\/\/([^/]+)\//)[1];
+        return uri.match(/https?:\/\/([^/]+)/)[1];
     }
     _getDatabaseInsertionChunkSize() { return this._databaseInsertionChunkSize }
 
     _getDefaultTitle() { return this._defaultTitle }
     _getContinueProcessBufferLimit() { return this._continueProcessBufferLimit }
     _getContinueProcessFetchChunkSize() { return this._continueProcessFetchChunkSize }
+
     async _getFirstWaitingLinkInBuffer() {
 
-        if(this._temp.waitingToFetch.length == 0) {
+        if(this._temp.waitingToFetch.length < this._getContinueProcessBufferLimit() && !this._temp.isFetchingMoreLinksToWait) {
+            this._temp.isFetchingMoreLinksToWait = true
+            console.log(`${this._getLogPrefix()}   Fetching more links to wait..`)
+            let links = await this.Database._makeQuery(`SELECT * FROM links
+                ORDER BY (links.lastFetch + links.createdAt  + 1000 * links.fetchCount)
+                LIMIT ?
+                `, [
+                    this._getContinueProcessFetchChunkSize()
+                ]
+            )
+            console.log(`${this._getLogPrefix()}   Fetched ${links.length} more links to wait..`)
+            this._temp.waitingToFetch.push(...links)
+            this._temp.isFetchingMoreLinksToWait = false
+        } else if(this._temp.isFetchingMoreLinksToWait) {
+            await somef.sleep(1*1000)
+        }
 
-            if(this._temp.waitingToFetch.length < this._getContinueProcessBufferLimit() && !this._temp.isFetchingMoreLinksToWait) {
-                this._temp.isFetchingMoreLinksToWait = true
-                console.log(`${this._getLogPrefix()}   Fetching more links to wait..`)
-                let links = await this.Database._makeQuery(`SELECT * FROM links
-                    ORDER BY (links.lastFetch + links.createdAt  + 1000 * links.fetchCount)
-                    LIMIT ?
-                    `, [
-                        this._getContinueProcessFetchChunkSize()
-                    ]
-                )
-                this._temp.isFetchingMoreLinksToWait = false
-                console.log(`${this._getLogPrefix()}   Fetched ${links.length} more links to wait..`)
-                this._temp.waitingToFetch.push(...links)
-            } else if(this._temp.isFetchingMoreLinksToWait) {
-                await somef.sleep(1000)
-            }
-
+        while(this._temp.waitingToFetch.length == 0) {
+            await somef.sleep(1011)
         }
         let link = this._temp.waitingToFetch.shift()
         return link
@@ -343,9 +344,8 @@ class new_fetcher {
     async _onFetched(axiosResponse) {
         if(this._isKilled()) return;
 
-        console.log("axiosResponse.data:",axiosResponse.data?.substr(0,50) ?? "data null")
 
-        if(this._isContentDibistanRelative(axiosResponse.data)) {
+        if(typeof axiosResponse.data === "string" && this._isContentDibistanRelative(axiosResponse.data)) {
 
             let new_links = this._extractLinks(axiosResponse.data)
             let temp_filter = this._filterWrongLinks(new_links)
