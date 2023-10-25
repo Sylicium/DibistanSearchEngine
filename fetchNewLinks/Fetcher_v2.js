@@ -1,7 +1,7 @@
 
 /**
  * @author Sylicium
- * @version 2.3.0
+ * @version 2.4.0
  * @date 25/10/2023
  */
 
@@ -47,7 +47,8 @@ class new_fetcher {
             robotTXT: {},
             fetchersRunning: 0,
             fetchedIDSBuffer: [], // The ones currently fetched, or fetched recently. Prevents multiple Fetchers to fetch same links
-            waitingToFetch: [] // links waiting to be fetched. Filtered by fetchedIDSBuffer
+            waitingToFetch: [], // links waiting to be fetched. Filtered by fetchedIDSBuffer
+            isFetchingMoreLinksToWait: false
         }
 
         this._stats = {
@@ -58,7 +59,15 @@ class new_fetcher {
 
     _getLogPrefix(type="info") {
         let time = somef.formatTime(Date.now() - this._startedTimestamp, `hh:mm:ss.ms`)
-        return `[Fetcher][${time}][${`${this._stats.fetchedLinks}`.padStart(7, " ")} fetch | ${`${this._stats.newScrappedLink}`.padStart(6, " ")} added | ${`${this._temp.waitingToFetch.length}`.padStart(3, " ")} waiting][${type.toUpperCase().padEnd(5," ")}]`
+        return `[Fetcher][${time}][${`${this._stats.fetchedLinks}`.padStart(9, " ")} fetch | ${`${this._stats.newScrappedLink}`.padStart(12, " ")} added | ${`${this._temp.waitingToFetch.length}`.padStart(3, " ")} waiting][${type.toUpperCase().padEnd(5," ")}]`
+    }
+    _statsAddFetchedLink(amount=1) {
+        if(typeof amount != 'number') { throw new Error("Invalid data type. Expected Number")}
+        this._stats.fetchedLinks += amount
+    }
+    _statsAddScrappedLink(amount=1) {
+        if(typeof amount != 'number') { throw new Error("Invalid data type. Expected Number")}
+        this._stats.fetchedLinks += amount
     }
 
     __init__() {
@@ -137,15 +146,26 @@ class new_fetcher {
             this._temp.fetchersRunning = this._temp.fetchersRunning - 1
         }
     }
-    _get
+
     _extractTitle(html_text) {
-        const regex = /<title>(.*?)<\/title>/g;
+        const regex = /<title>(.*?)<\/title>/gi;
         const match = regex.exec(html_text);
         let titleContent = this._getDefaultTitle()
         if (match) {
-        titleContent = match[1];
+            titleContent = match[1];
         }
         return titleContent.length > 1 ? titleContent : this._getDefaultTitle()
+    }
+    _extractP(html_text) {
+        const regex = /<p[^>]*>(.*?)<\/p>/gis;
+        const matches = [];
+
+        let match;
+        while ((match = regex.exec(html_text)) !== null) {
+            const paragraphContent = match[1];
+            matches.push(paragraphContent);
+        }
+        return matches
     }
 
     _extractLinks(html_text) {
@@ -226,6 +246,9 @@ class new_fetcher {
         let temp_filter3 = this._rebuildRelativePath(this._getDomainFromURI(axiosResponse.config.url), temp_filter2)
         let filteredLinks = temp_filter3 // await this._filterLinksByRobotTXT(new_links, axiosResponse.config.url)
 
+        
+        this._statsAddScrappedLink(filteredLinks.length)
+
         //console.log("new_links:",new_links)
         //console.log("filteredLinks:",filteredLinks)
 
@@ -266,6 +289,7 @@ class new_fetcher {
         
         axios.get(datas.uri, this._getAxiosOptions()).then((response) => {
             this._releaseFetcher()
+            this._statsAddFetchedLink(1)
             console.log(`${this._getLogPrefix()} Success for ID=${datas.id}`)
             
             let titleContent = this._extractTitle(response.data)
@@ -327,7 +351,8 @@ class new_fetcher {
 
     async _continueProcess() {
         console.log(`${this._getLogPrefix()} Continuing.. (${this._temp.fetchersRunning} / ${this._getMaxFetchAmount()} fetchers online)`)
-        if(this._temp.waitingToFetch.length < this._getContinueProcessBufferLimit()) {
+        if(this._temp.waitingToFetch.length < this._getContinueProcessBufferLimit() && !this._temp.isFetchingMoreLinksToWait) {
+            this._temp.isFetchingMoreLinksToWait = true
             console.log(`${this._getLogPrefix()}   Fetching more links to wait..`)
             let links = await this.Database._makeQuery(`SELECT * FROM links
                 ORDER BY (links.lastFetch + links.createdAt  + 1000 * links.fetchCount)
@@ -336,6 +361,7 @@ class new_fetcher {
                     this._getContinueProcessFetchChunkSize()
                 ]
             )
+            this._temp.isFetchingMoreLinksToWait = false
             console.log(`${this._getLogPrefix()}   Fetched ${links.length} more links to wait..`)
             this._temp.waitingToFetch.push(...links)
         }
