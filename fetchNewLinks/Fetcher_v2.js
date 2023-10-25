@@ -1,7 +1,7 @@
 
 /**
  * @author Sylicium
- * @version 2.5.0
+ * @version 2.5.1
  * @date 25/10/2023
  */
 
@@ -67,7 +67,7 @@ class new_fetcher {
     }
     _statsAddScrappedLink(amount=1) {
         if(typeof amount != 'number') { throw new Error("Invalid data type. Expected Number")}
-        this._stats.fetchedLinks += amount
+        this._stats.newScrappedLink += amount
     }
 
     __init__() {
