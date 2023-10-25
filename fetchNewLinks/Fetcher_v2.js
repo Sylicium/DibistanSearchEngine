@@ -91,10 +91,26 @@ class new_fetcher {
     _getContinueProcessBufferLimit() { return this._continueProcessBufferLimit }
     _getContinueProcessFetchChunkSize() { return this._continueProcessFetchChunkSize }
     async _getFirstWaitingLinkInBuffer() {
+
         if(this._temp.waitingToFetch.length == 0) {
-            console.log(`${this._getLogPrefix("ERROR")} Fatal error: Waiting links to fetch buffer is empty ! (Even after 1s wait)`)
-            await somef.sleep(1000)
-            if(this._temp.waitingToFetch.length == 0) throw Error(`${this._getLogPrefix("ERROR")} Fatal error: Waiting links to fetch buffer is empty ! (Even after 1s wait)`)
+
+            if(this._temp.waitingToFetch.length < this._getContinueProcessBufferLimit() && !this._temp.isFetchingMoreLinksToWait) {
+                this._temp.isFetchingMoreLinksToWait = true
+                console.log(`${this._getLogPrefix()}   Fetching more links to wait..`)
+                let links = await this.Database._makeQuery(`SELECT * FROM links
+                    ORDER BY (links.lastFetch + links.createdAt  + 1000 * links.fetchCount)
+                    LIMIT ?
+                    `, [
+                        this._getContinueProcessFetchChunkSize()
+                    ]
+                )
+                this._temp.isFetchingMoreLinksToWait = false
+                console.log(`${this._getLogPrefix()}   Fetched ${links.length} more links to wait..`)
+                this._temp.waitingToFetch.push(...links)
+            } else if(this._temp.isFetchingMoreLinksToWait) {
+                await somef.sleep(1000)
+            }
+
         }
         let link = this._temp.waitingToFetch.shift()
         return link
@@ -327,6 +343,8 @@ class new_fetcher {
     async _onFetched(axiosResponse) {
         if(this._isKilled()) return;
 
+        console.log("axiosResponse.data:",axiosResponse.data?.substr(0,50) ?? "data null")
+
         if(this._isContentDibistanRelative(axiosResponse.data)) {
 
             let new_links = this._extractLinks(axiosResponse.data)
@@ -350,7 +368,7 @@ class new_fetcher {
                 }
     
             }
-            
+
         }
 
         this._continueProcess()
@@ -429,21 +447,7 @@ class new_fetcher {
 
     async _continueProcess() {
         console.log(`${this._getLogPrefix()} Continuing.. (${this._temp.fetchersRunning} / ${this._getMaxFetchAmount()} fetchers online)`)
-        if(this._temp.waitingToFetch.length < this._getContinueProcessBufferLimit() && !this._temp.isFetchingMoreLinksToWait) {
-            this._temp.isFetchingMoreLinksToWait = true
-            console.log(`${this._getLogPrefix()}   Fetching more links to wait..`)
-            let links = await this.Database._makeQuery(`SELECT * FROM links
-                ORDER BY (links.lastFetch + links.createdAt  + 1000 * links.fetchCount)
-                LIMIT ?
-                `, [
-                    this._getContinueProcessFetchChunkSize()
-                ]
-            )
-            this._temp.isFetchingMoreLinksToWait = false
-            console.log(`${this._getLogPrefix()}   Fetched ${links.length} more links to wait..`)
-            this._temp.waitingToFetch.push(...links)
-        }
-
+        
         for(let i=0;i < this._getFreeFetchersAmount(); i++) {
             if(this._canUseFetcher()) {
                 this._startFetchURI(await this._getFirstWaitingLinkInBuffer())
