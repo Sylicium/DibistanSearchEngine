@@ -1,15 +1,16 @@
 
 
 let somef = require("./someFunctions")
+const Database = require("./Database")
 
 
 class Dibsilon {
     constructor() {
         this.Algorithm = {
             copyright: "Dibsilon (c) Sylicium 2022",
-            lastVersion: "0.2.0-alpha",
-            date: "02/12/2022",
-            developer: "Sylicium",
+            lastVersion: "1.0.0-alpha",
+            date: "24/10/2023",
+            author: "Sylicium",
         }
 
         this._GlobalConfig = {
@@ -24,156 +25,16 @@ class Dibsilon {
         return this._GlobalConfig
     }
 
-    sortByQuery(query, allDBObjects) {
+
+    getPageByQuery(pageNum, query) {
 
     }
 
-    _getKeywordsMatchRegex_fromQuery(query) {
-        console.log("AEJGF query:",query)
-        let keywordList = query.toLowerCase().split(" ").map(x => { return x.trim() })
-        let keywordList_formatedString = somef._normalize(keywordList.join(" "))
-        let all_keywords_matchRegex_preTemp = `(${somef.splitAndJoin(keywordList_formatedString, {
-            "\\": "\\\\", "|": "\\|", "/": "\\/",
-            "-": "\\-", "_": "\\_", "$": "\\$",
-            "[": "\\[", "]": "\\]", "(": "\\(",
-            ")": "\\)", "{": "\\{", "}": "\\}",
-            "?": "\\?", "*": "\\*", "+": "\\+",
-            ",": "\\,", "^": "\\^", ":": "\\:",
-            "<": "\\<", ">": "\\>", "'": "\\'",
-            '"': '\\"', "#": "\\#",
-
-            "à": "a", "á": "a", "â": "a", "ã": "a", "ä": "a", "å": "a",
-            "a": "[aàáâãäå]",
-
-            "è": "e", "é": "e", "ê": "e", "ë": "e",
-            "e": "[eèéêë]",
-
-            "ì": "i", "í": "i", "î": "i", "ï": "i",
-            "i": "[iìíîï]",
-
-            "ò": "o", "ó": "o", "ô": "o", "õ": "o", "ö": "o", "ø": "o",
-            "o": "[oòóôõöø]",
-            
-            "ù": "u", "ú": "u", "û": "u", "ü": "u",
-            "u": "[uùúûü]",
-
-            "ý": "y", "ÿ": "y",
-            "y": "[yýÿ]",
-
-            "ñ": "n", "n": "[nñ]",
-            "ç": "c", "c": "[cç]",
-            
-            "æ": "ae", "ae": "(ae|æ)",
-            "œ": "oe", "oe": "(oe|œ)",
-        }).split(" ").join("|")})`
-        let all_keywords_matchRegex = new RegExp(all_keywords_matchRegex_preTemp, "i")
-        return all_keywords_matchRegex
-    }
-
-
-    async getCountLinksByKeywords(database, query) {
-        let all_keywords_matchRegex = this._getKeywordsMatchRegex_fromQuery(query)
-        let back = await database.Mongo.db(database._usedDataBaseName).collection("links").countDocuments({
-            $or: [
-                { title: all_keywords_matchRegex },
-                { description: all_keywords_matchRegex },
-                { keywords: all_keywords_matchRegex },
-            ]
-        })
-        console.log("back",back)
-        return back
-    }
-
-    /**
-     * f(): Retourne une liste de 0 à 20 élements des liens trouvés matchant la query
-     * @param {String} query - La string de recherche à effectuer et transformer en mot clés
-     * @param {Object} infos - { from: 0, to: 20 } le range des données à récupérer. (eq <=> quelle page * longeur par page)
-     * @returns "{ count: total document hit by query, fetched: max 20 documents }"
-     */
-    async getAllLinksByQuery(database, query, infos) {
-        let all_keywords_matchRegex = this._getKeywordsMatchRegex_fromQuery(query)
-
-        /*
-        infos = {
-            start: (req.query.start ?? 0), // skip first X links.
-        }
-        */
-        
-        let the_skip = (infos.start != undefined ? parseInt(infos.start) : 0)
-        let the_limit = this.Config.page.length
-
-        console.log("the_skip",the_skip,"the_limit",the_limit)
-
-        return await database.Mongo.db(database._usedDataBaseName).collection("links").aggregate([
-            {
-                $match: {
-                    $or: [
-                        { title: all_keywords_matchRegex } , 
-                        { description: all_keywords_matchRegex } , 
-                        { keywords: all_keywords_matchRegex } , 
-                    ]
-                }
-            },
-            {
-                $addFields: {
-                    "isMatchTitle": {
-                        $regexMatch: {
-                            input: "$title",
-                            regex: all_keywords_matchRegex,
-                        }
-                    },
-                    "isMatchUrl": {
-                        $regexMatch: {
-                            input: "$url",
-                            regex: all_keywords_matchRegex
-                        }
-                    },"isMatchDescription": {
-                        $regexMatch: {
-                            input: "$description",
-                            regex: all_keywords_matchRegex
-                        }
-                    },"isMatchKeywords": {
-                        $regexMatch: {
-                            input: {
-                                $reduce:{
-                                    "input":"$keywords",
-                                    "initialValue":"",
-                                    "in": {
-                                        $concat:["$$value","-","$$this"]
-                                    }
-                                }
-                            },
-                            regex: all_keywords_matchRegex
-                        }
-                    },
-                }
-            },
-            {
-                $sort: {
-                    isMatchTitle : -1,
-                    isMatchUrl : -1,
-                    isMatchDescription : -1,
-                    isMatchKeywords : -1,
-                    //"url": 1,
-                    //"title": 1,
-                    //"description": 1,
-                    //"keywords": 1,
-                }
-            },
-            {
-                $project: {
-                    url: 1,
-                    description: { $substrCP: ["$description", 0, 300] },   
-                    title: 1,
-                }
-            },
-            {
-                $skip: the_skip
-            },
-            {
-                $limit: the_limit
-            },
-        ]).toArray()
+    getLinksByQuery(start, end, query) {
+        Database._makeQuery(`SELECT * FROM links
+        WHERE url REGEXP ?
+        LIMIT ?,?
+        `, [query, start,end])
     }
 
 
