@@ -26,6 +26,7 @@ class new_fetcher {
         this._maxSimultaneousFetch = maxSimultaneousFetch
         this._socket = new somef.Emitter()
 
+        this._minimumTimeBetweenFetches = 1000 // millisecond
         this._UserAgent = `DibsilonCrawler/0.1.0 (https://search.sylicium.fr/ for more infos)`
         this._defaultTitle = "No title"
         this._axiosRequestOptions = {
@@ -56,6 +57,11 @@ class new_fetcher {
             fetchedLinks: 0,
             newScrappedLink:0
         }
+    }
+
+    async _useFetchTimeWindow() {
+        while(Date.now() - this._lastFetchRequest < this._minimumTimeBetweenFetches) { await somef.sleep(10) }
+        this._lastFetchRequest = Date.now()
     }
 
     _getLogPrefix(type="info") {
@@ -376,6 +382,7 @@ class new_fetcher {
 
     _startFetchURI(datas) {
         this._useFetcher()
+        this._useFetchTimeWindow()
         console.log(`${this._getLogPrefix()} Start fetch of ID=${datas.id} (${datas.uri.substr(0,100)}${datas.length > 100 ? "..." : ""}) `)
 
         
