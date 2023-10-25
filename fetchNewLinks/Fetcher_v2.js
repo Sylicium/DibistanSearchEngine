@@ -1,7 +1,7 @@
 
 /**
  * @author Sylicium
- * @version 2.6.0
+ * @version 2.7.0
  * @date 25/10/2023
  */
 
@@ -295,7 +295,7 @@ class new_fetcher {
                 let links_chunk = chunks[i]
                 insertLinksIntoDatabase(links_chunk)
             }
-            
+
         }
         this._continueProcess()
     }
