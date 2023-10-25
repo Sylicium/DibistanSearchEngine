@@ -1,7 +1,7 @@
 
 /**
  * @author Sylicium
- * @version 3.1.0
+ * @version 3.2.1
  * @date 25/10/2023
  */
 
@@ -61,7 +61,7 @@ class new_fetcher {
     }
 
     async _useFetchTimeWindow() {
-        if(_minimumTimeBetweenFetches == 0) return;
+        if(this._minimumTimeBetweenFetches == 0) return;
         while(Date.now() - this._lastFetchRequest < this._minimumTimeBetweenFetches) { await somef.sleep(1) }
         this._lastFetchRequest = Date.now()
     }
@@ -80,12 +80,14 @@ class new_fetcher {
     }
 
     __init__() {
-        setInterval(() => {
-            //console.log("temp:",this._temp)
-        }, 1000)
         console.log("Initializing...")
         this._socket.emit("ready", Date.now())    
         console.log("Done.")
+
+        this._refreshWaitingBuffer_interval = setInterval(() => {
+            this._addLinksToWaitingListBuffer()
+        }, 1000)
+
     }
 
     _getAxiosOptions() { return this._axiosRequestOptions }
@@ -99,8 +101,8 @@ class new_fetcher {
     _getContinueProcessBufferLimit() { return this._continueProcessBufferLimit }
     _getContinueProcessFetchChunkSize() { return this._continueProcessFetchChunkSize }
 
-    async _getFirstWaitingLinkInBuffer() {
 
+    async _addLinksToWaitingListBuffer() {
         if(this._temp.waitingToFetch.length < this._getContinueProcessBufferLimit() && !this._temp.isFetchingMoreLinksToWait) {
             this._temp.isFetchingMoreLinksToWait = true
             console.log(`${this._getLogPrefix()}   Fetching more links to wait..`)
@@ -114,9 +116,10 @@ class new_fetcher {
             console.log(`${this._getLogPrefix()}   Fetched ${links.length} more links to wait..`)
             this._temp.waitingToFetch.push(...links)
             this._temp.isFetchingMoreLinksToWait = false
-        } else if(this._temp.isFetchingMoreLinksToWait) {
-            await somef.sleep(1*1000)
         }
+    }
+
+    async _getFirstWaitingLinkInBuffer() {
 
         while(this._temp.waitingToFetch.length == 0) {
             await somef.sleep(1011)
