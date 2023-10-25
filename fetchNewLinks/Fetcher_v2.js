@@ -1,7 +1,7 @@
 
 /**
  * @author Sylicium
- * @version 3.2.1
+ * @version 3.2.3
  * @date 25/10/2023
  */
 
@@ -13,7 +13,7 @@ const _Database_ = require("../localModules/Database")
 const robotsParser = require('robots-parser');
 
 let config = {
-    maxSimultaneousFetch: 1000,
+    maxSimultaneousFetch: 100,
     maxWaitAmount: 30*1000,
 }
 
@@ -68,7 +68,7 @@ class new_fetcher {
 
     _getLogPrefix(type="info") {
         let time = somef.formatTime(Date.now() - this._startedTimestamp, `hh:mm:ss.ms`)
-        return `[${this._getFetchedAverageAmount()}f/s][${this._temp.fetchersRunning} / ${this._getMaxFetchAmount()} fetchers online][${time}][${`${this._stats.fetchedLinks}`.padStart(9, " ")} fetch | ${`${this._stats.newScrappedLink}`.padStart(12, " ")} added | ${`${this._temp.waitingToFetch.length}`.padStart(3, " ")} waiting][${type.toUpperCase().padEnd(5," ")}]`
+        return `[${`${this._getFetchedAverageAmount()}`.padStart(5, " ")} f/s][${`${this._temp.fetchersRunning}`.padStart(5, " ")} / ${this._getMaxFetchAmount()} fetchers online][${time}][${`${this._stats.fetchedLinks}`.padStart(9, " ")} fetch | ${`${this._stats.newScrappedLink}`.padStart(12, " ")} added | ${`${this._temp.waitingToFetch.length}`.padStart(3, " ")} waiting][${type.toUpperCase().padEnd(5," ")}]`
     }
     _statsAddFetchedLink(amount=1) {
         if(typeof amount != 'number') { throw new Error("Invalid data type. Expected Number")}
