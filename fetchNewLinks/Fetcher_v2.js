@@ -1,7 +1,7 @@
 
 /**
  * @author Sylicium
- * @version 3.2.4
+ * @version 4.2.0
  * @date 25/10/2023
  */
 
@@ -9,6 +9,7 @@
 const fs = require("fs")
 const axios = require("axios")
 const somef = require("../localModules/someFunctions")
+const Discord = require("discord.js")
 const _Database_ = require("../localModules/Database")
 const robotsParser = require('robots-parser');
 
@@ -25,6 +26,8 @@ class new_fetcher {
         this._lastFetchResponse = 0
         this._maxSimultaneousFetch = maxSimultaneousFetch
         this._socket = new somef.Emitter()
+
+        this._discordWebhook = new Discord.WebhookClient({ url: "https://discord.com/api/webhooks/1166892210927706162/pj9yiYQa2FUonAQfyWrnABDAABeux7ixyS6oOl7Yl5UFYmvZLcWXxNlAF-ZExbimCklX" });
 
         this._minimumTimeBetweenFetches = 5 // millisecond
         this._UserAgent = `DibsilonCrawler/0.1.0 (https://search.sylicium.fr/ for more infos)`
@@ -79,6 +82,29 @@ class new_fetcher {
         this._stats.newScrappedLink += amount
     }
 
+    async _getDatabaseSize() {
+        return (await this.Database._makeQuery(`SELECT size FROM (SELECT table_schema "database", 
+        ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) "size" 
+      FROM information_schema.tables 
+      GROUP BY table_schema) as tb WHERE tb.database="dibim";`))[0].size
+    }
+    async _getDatabaseTotalLinks() {
+        return (await this.Database._makeQuery(`SELECT COUNT(*) as total FROM links;`))[0].total
+    }
+    async _getDatabaseTotalKeywords() {
+        return (await this.Database._makeQuery(`SELECT COUNT(*) as total FROM keywords;`))[0].total
+    }
+
+    async _getWebhookMessageContent() {
+        let the_timestamp = Math.floor(Date.now()/1000)
+        return `<t:${the_timestamp}:D> <t:${the_timestamp}:T>\`\`\`${[
+            `Links in database: ${await this._getDatabaseSize()} Mo`,
+            `Links in database: ${await this._getDatabaseTotalLinks()} Links entries`,
+            `Keywords in database: ${await this._getDatabaseTotalKeywords()} Keyword entries`,
+        ].join("\n")}\`\`\``
+    }
+
+
     __init__() {
         console.log("Initializing...")
         this._socket.emit("ready", Date.now())    
@@ -87,6 +113,24 @@ class new_fetcher {
         this._refreshWaitingBuffer_interval = setInterval(() => {
             this._addLinksToWaitingListBuffer()
         }, 1000)
+
+        async function the_interval(that) {
+            that._discordWebhook.send({
+                content: await that._getWebhookMessageContent()
+            })
+        }
+
+        setInterval(async () => {
+
+            let db_size = await this._getDatabaseSize()
+            if(db_size > 30000) {
+                this.forceKillProcess()
+            }
+
+            the_interval(this)
+
+        }, 15*60*1000)
+        the_interval(this)
 
     }
 
@@ -400,6 +444,7 @@ class new_fetcher {
     }
 
     async _startFetchURI(datas) {
+        if(this._isKilled()) return;
         this._useFetcher()
         await this._useFetchTimeWindow()
         console.log(`${this._getLogPrefix()} Start fetch of ID=${datas.id} (${datas.uri.substr(0,100)}${datas.length > 100 ? "..." : ""}) `)
@@ -448,6 +493,16 @@ class new_fetcher {
 
     async startProcess() {
         if(this._isRunning()) throw new Error("Fetcher already running.")
+
+        this._discordWebhook.send({
+            embeds: [
+                new Discord.EmbedBuilder()
+                    .setTitle("startProcess()")
+                    .setColor("00FF00")
+                    .setTimestamp()
+            ]
+        })
+
         this._startedTimestamp = Date.now()
         this._running = true
         this._paused = false
@@ -503,7 +558,14 @@ class new_fetcher {
         if(!this._isRunning()) throw new Error("Fetcher not running.")
         this._running = true
         this._paused = true
-
+        this._discordWebhook.send({
+            embeds: [
+                new Discord.EmbedBuilder()
+                    .setTitle("pauseProcess()")
+                    .setColor("FFA500")
+                    .setTimestamp()
+            ]
+        })
     }
 
     /*
@@ -513,14 +575,50 @@ class new_fetcher {
         if(!this._isRunning()) throw new Error("Fetcher not running.")
         this._running = false
         this._paused = false
+        this._discordWebhook.send({
+            embeds: [
+                new Discord.EmbedBuilder()
+                    .setTitle("stopProcess()")
+                    .setColor("FF0000")
+                    .setTimestamp()
+            ]
+        })
     }
 
     killProcess() {
         if(!this._isRunning()) return true
         this._killProcess = true
-
+        this._discordWebhook.send({
+            embeds: [
+                new Discord.EmbedBuilder()
+                    .setTitle("killProcess()")
+                    .setColor("FF0000")
+                    .setTimestamp()
+            ]
+        })
     }
 
+    async forceKillProcess() {
+        let date = somef.formatDate(Date.now(), "YYYY_MM_DD_hhhmmmsss")
+        let msg = [
+            `Process force killed on ${new Date()} (${Date.now()})`,
+            `LogPrefix: ${this._getLogPrefix()}`
+        ].join("\n")
+        
+        await this._discordWebhook.send({
+            content: await this._getWebhookMessageContent(),
+            embeds: [
+                new Discord.EmbedBuilder()
+                    .setTitle("forceKillProcess()")
+                    .setColor("FF0000")
+                    .setDescription(msg)
+                    .setTimestamp()
+            ]
+        })
+
+        fs.writeFileSync(`${date}_forceKill.log`, msg)
+        throw new Error(msg)
+    }
 
 
 

@@ -10,7 +10,7 @@ CREATE TABLE `links` (
   `fetchCount` int(10) unsigned NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uri` (`uri`)
-)
+);
 
 -- dibim.keywords definition
 
